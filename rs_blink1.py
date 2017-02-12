@@ -4,6 +4,7 @@
 #
 #
 import threading
+import struct
 import time
 
 Blink1 = None
@@ -77,6 +78,7 @@ def handle(queryDict):
 
 	_unit = '0'
 	_mode = 'glimmer'
+	_rgb = 'ffffff'
 
 	# get supplied info
 
@@ -86,8 +88,8 @@ def handle(queryDict):
 	if 'mode' in queryDict:
 		_mode = queryDict['mode'][0]
 
-#	if 'text' in queryDict:
-#		_text = queryDict['text'][0]
+	if 'rgb' in queryDict:
+		_rgb = queryDict['rgb'][0]
 
 #	if 'invert' in queryDict:
 #		_invert = queryDict['invert'][0]
@@ -95,10 +97,24 @@ def handle(queryDict):
 #	if 'font' in queryDict:
 #		_font = queryDict['font'][0]
 
+	# convert the text rgb into an r,g,b tuple...
+
+	_rgb = _rgb.lstrip('#')
+	if (len(_rgb) != 6):
+		return (False, "Bad {rgb} value")
+
+	try:
+		r,g,b = struct.unpack('BBB', _rgb.decode('hex'))
+
+	except:
+		return (False, "Bad {rgb} value")
+
+	if (r < 0 or r > 255 or g < 0 or g > 255 or b < 0 or b > 255):
+		return (False, "Bad {rgb} value")
 
 	# start a thread to talk to the blink1
 
-	devThread = threading.Thread(target=device_thread, args=(_unit, _mode, 255, 255, 255))
+	devThread = threading.Thread(target=device_thread, args=(_unit, _mode, r, g, b))
 	devThread.daemon = True
 	devThread.start()
 	return (True, "OK")
