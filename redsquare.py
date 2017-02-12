@@ -144,7 +144,7 @@ def client_thread(conn):
 
     # build the http reply
     body = '<html><body>' + response + '</body></html>'
-    reply = 'HTTP/1.1 200 OK\r\nContent-Length: ' + str(len(body)) + '\r\n\r\n' + body
+    reply = 'HTTP/1.1 200 OK\r\nContent-Length: ' + str(len(body)) + '\r\n\r\n' + body + '\r\n\r\n'
 
     # send it and close the socket
     print '[Info] Sending reply "' + response + '"...'
