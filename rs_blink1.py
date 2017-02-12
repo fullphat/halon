@@ -1,15 +1,13 @@
-# RedPowder ][
+# RedSquare
 # Blink(1) LED device library
 # Copyright (c) 2017 full phat products
 #
 #
-#import sys
 import threading
-#import os
 import time
 
-blink1 = None 
-#maxThread = None
+Blink1 = None
+devThread = None
 
 def strobe(blink1, r, g, b, repeat):
 	for i in range(repeat):
@@ -47,19 +45,14 @@ def glimmer(blink1, r, g, b, repeat):
 # initialise - return True only if everything went ok
 #
 def init():
-	global blink1
+
+	global Blink1
 	try:
-		from blink1_pyusb import Blink1 as Blink1
-		blink1 = Blink1()
-		if blink1.dev == None:
-			print "[blink1]: no device found"
-			return False
+		from support.blink1 import Blink1
+		return True
 
-		else:
-			return True
-
-	except:
-		print "[blink1]: couldn't load "
+	except Exception, e:
+		print "[blink1]: couldn't load support library:", e
 		return False
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -68,16 +61,13 @@ def init():
 #
 def handle(queryDict):
 
-	global blink1
-	glimmer(blink1, 255, 255, 255, 6)
-
 	# check to see if our thread is still running, if so
 	# this means we're scrolling a message.  For now we
 	# fail and return a 'device busy' message...
 
 	# TO DO: look to see if we can queue messages
 
-#	global maxThread
+	global devThread
 #	if maxThread:
 #		if maxThread.is_alive():
 #			print '[Info] device is busy - dropping this request...'
@@ -85,67 +75,60 @@ def handle(queryDict):
 
 	# set defaults
 
-	_device = '0'
-	_mode = 'scroll'
-	_font = ''
-	_text = ''
-	_invert = '0'
+	_unit = '0'
+	_mode = 'glimmer'
 
 	# get supplied info
 
-	if 'device' in queryDict:
-		_device = queryDict['device'][0]
+	if 'unit' in queryDict:
+		_unit = queryDict['unit'][0]
 
 	if 'mode' in queryDict:
 		_mode = queryDict['mode'][0]
 
-	if 'text' in queryDict:
-		_text = queryDict['text'][0]
+#	if 'text' in queryDict:
+#		_text = queryDict['text'][0]
 
-	if 'invert' in queryDict:
-		_invert = queryDict['invert'][0]
+#	if 'invert' in queryDict:
+#		_invert = queryDict['invert'][0]
 
-	if 'font' in queryDict:
-		_font = queryDict['font'][0]
+#	if 'font' in queryDict:
+#		_font = queryDict['font'][0]
 
 
-	if _text == "":
-		return (False, "Nothing to display")
+	# start a thread to talk to the blink1
 
-	# start a thread to display the message
-
-#	maxThread = threading.Thread(target=device_thread, args=(_mode, _text, _invert, _font.lower()))
-#	maxThread.daemon = True
-#	maxThread.start()
+	devThread = threading.Thread(target=device_thread, args=(_unit, _mode, 255, 255, 255))
+	devThread.daemon = True
+	devThread.start()
 	return (True, "OK")
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# thread that talks to the max7219
+# thread that talks to the blink(1)
 #
-def device_thread(mode, text, invert, fontName):
-	matrix = led.matrix(cascaded=1)
+def device_thread(unit, mode, red, green, blue):
 
-	if invert == "1":
-		matrix.invert(True)
+	u = 0
 
-	# default font is CP437
-	font = proportional(CP437_FONT)
+	try:
+		u = int(unit)
 
-	if fontName == "sinclair":
-		font = proportional(SINCLAIR_FONT)
+	except:
+		print "[blink1]: invalid unit '" + unit + "'"
+		return
 
-	elif fontName == "tiny":
-		font = proportional(TINY_FONT)
 
-	# mode
+	global Blink1
+	device = Blink1(u)
+	if (device.dev == None):
+		print "[blink1]: no device found on unit #" + unit
+		return
 
-	if mode == "print":
-		chr = text[0]
-		matrix.letter(0, ord(chr), font, False)
-		matrix.scroll_right()
-#        device.flush()
+	print "[blink1] Unit #" + unit + ": Firmware  " + device.get_version()
 
-	else:
-		matrix.show_message(text, font)
-		matrix.clear()
+	glimmer(device, red, green, blue, 6)
+
+#	blink1.fade_to_rgb(1000, red, green, blue)
+#	time.sleep(0.5)
+#	blink1.fade_to_rgb(1000, 0, 0, 0)
 

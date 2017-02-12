@@ -41,17 +41,17 @@ def signal_handler(signal, frame):
 def load_handler(name):
     global libs
     try:
-        lib = importlib.import_module(name, package=None)
+        lib = importlib.import_module("rs_" + name, package=None)
         success = getattr(lib, 'init')()
-        #print name + ":" + str(success)
         if success:
+            print "    [" + name + ".device]: loaded ok"
             libs[name] = lib
 
         else:
-            print "[FAIL]: handler '" + name + "' loaded but didn't initialise"
+            print "    [" + name + ".device]: failed to initialise"
 
     except:
-        print "[FAIL]: handler '" + name + "' not found"
+        print "    [" + name + ".device]: not found"
 
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -59,12 +59,15 @@ def load_handler(name):
 # a .conf file, or enumerating a directory)
 #
 def get_handlers():
-    load_handler("rs_null")
-    load_handler("rs_max7219")
-    load_handler("rs_blink1")
+    print ""
+    print "Loading device handlers..."
+    load_handler("null")
+    load_handler("max7219")
+    load_handler("blink1")
     load_handler("xxx")			# test failure
+    print "Loaded device handlers"
 
-    print libs
+#    print libs
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # helper: retrieve the requested URL from a standard HTTP request
@@ -94,7 +97,7 @@ def handle(queryDict):
         _device = queryDict['device'][0]
 
     try:
-        dev = libs["rs_" + _device]
+        dev = libs[_device]
         if dev == None:
             print "[FAIL]: bad: " + _device
             return False, "bad device '" + _device + "'"
@@ -189,7 +192,9 @@ except socket.error as msg:
     sys.exit()
      
 s.listen(10)
+print ""
 print '[Info] Now listening for incoming requests on port ' + str(PORT)
+print ""
  
 # loop until we get a SIGINT...
 
