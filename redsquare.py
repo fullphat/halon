@@ -1,5 +1,5 @@
 # RedSquare
-VERSION = "0.1"
+VERSION = "0.2"
 # Copyright (c) 2017 full phat products
 #
 # Usage: python reqsquare.py [port]
@@ -8,6 +8,7 @@ VERSION = "0.1"
 #
 # Credit to binary tides for python threaded socket code
 #
+# 0.2 - added basic support for the Unicorn Hat using Pimoroni's own library
 # 0.1 - renamed to RedSquare
 #
 #
@@ -64,6 +65,7 @@ def get_handlers():
     load_handler("null")
     load_handler("max7219")
     load_handler("blink1")
+    load_handler("unicornhat")
     load_handler("xxx")			# test failure
     print "Loaded device handlers"
 
@@ -102,12 +104,12 @@ def handle(queryDict):
             print "[FAIL]: bad: " + _device
             return False, "bad device '" + _device + "'"
 
-        # return the result of calling handler->handle()
-        return getattr(dev, 'handle')(queryDict)
-
     except:
         print "[FAIL]: unknown device: " + _device
         return False, "Unknown device '" + _device + "'"
+
+    # return the result of calling handler->handle()
+    return getattr(dev, 'handle')(queryDict)
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # connection handler

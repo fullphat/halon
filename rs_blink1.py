@@ -53,7 +53,7 @@ def init():
 		return True
 
 	except Exception, e:
-		print "[blink1]: couldn't load support library:", e
+		print "    [blink1]: couldn't load support library:", e
 		return False
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

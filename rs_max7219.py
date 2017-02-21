@@ -27,7 +27,7 @@ def init():
 		return True
 
 	except:
-		print "[max7219]: couldn't load luma.led_matrix"
+		print "    [max7219]: couldn't load luma.led_matrix"
 		return False
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
