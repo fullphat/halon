@@ -45,14 +45,14 @@ def load_handler(name):
         lib = importlib.import_module("rs_" + name, package=None)
         success = getattr(lib, 'init')()
         if success:
-            print "    [" + name + ".device]: loaded ok"
+            print "[" + name + ".device]: loaded ok"
             libs[name] = lib
 
         else:
-            print "    [" + name + ".device]: failed to initialise"
+            print "[" + name + ".device]: failed to initialise"
 
     except:
-        print "    [" + name + ".device]: not found"
+        print "[" + name + ".device]: not found"
 
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

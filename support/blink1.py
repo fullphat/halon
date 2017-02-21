@@ -8,20 +8,27 @@ import uuid
 
 debugimport=False
 use_pyusb=False
+
 try:
+    print "[blink1]: trying blink1_pyusb..."
     from blink1_pyusb import Blink1 as Blink1_pyusb
+    print "[blink1]: using blink1_pyusb"
     use_pyusb = True
+
     #sys.modules['Blink1'] = blink1_pyusb
-    print "using blink1_pyusb"
+
+
 except ImportError:
-    try: 
+    try:
+        print "[blink1]: couldn't load blink1_pyusb, trying blink1_ctypes..."
         from blink1_ctypes import Blink1 as Blink1_ctypes
         #sys.modules['Blink1'] = blink1_ctypes
-        print "using blink1_ctypes" 
-    except ImportError:
-        print "couldn't load blink1_pyusb or blink1_ctypes"
-        sys.exit(1)
+        print "[blink1]: using blink1_ctypes" 
 
+    except ImportError:
+        print "[blink1]: Failed to load blink1_pyusb or blink1_ctypes"
+        print "[blink1]: Try installing pyusb using 'sudo pip install pyusb'"
+        sys.exit(1)
 
 hostid = uuid.uuid4().hex[:8]
 
