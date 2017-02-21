@@ -10,11 +10,12 @@ RedSquare provides a simple web server that abstracts the different libraries re
 
 - Max7219 8x8 LED Matrix
 - Thingm Blink(1) USB LED
+- Pimoroni HAT
 
-## Supported Planned
+## Support Planned
 
 - Nokia 3310/5110 LCD Display
-- Pimoroni HAT (and pHAT)
+- Pimoroni pHAT
 
 ## Examples
 
