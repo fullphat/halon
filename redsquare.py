@@ -1,5 +1,5 @@
 # RedSquare
-VERSION = "0.2"
+VERSION = "0.2c"
 # Copyright (c) 2017 full phat products
 #
 # Usage: python reqsquare.py [port]
@@ -40,6 +40,7 @@ def signal_handler(signal, frame):
 # okay, initialise it by calling its Init() method
 #
 def load_handler(name):
+    print "[info]: opening " + name + ".device..."
     global libs
     try:
         lib = importlib.import_module("rs_" + name, package=None)
