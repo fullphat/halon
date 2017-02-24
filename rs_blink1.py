@@ -58,14 +58,14 @@ def init():
 
 	# run through available blink(1) devices
 
+	print "[blink1]: scanning for connected devices..."
 	global Blink1
 	for i in range(32):
 		device = Blink1(i)
-		if (device.dev == None):
-			print "[blink1]: No device found on unit #" + unit
+		if (device.dev != None):
+			print "[blink1]: unit #" + str(i) + ": firmware " + device.get_version()
 
-		else:
-			print "[blink1]: Unit #" + str(i) + ": Firmware " + device.get_version()
+	print "[blink1]: scan complete"
 
 	# did we find any devices?
 
@@ -75,7 +75,7 @@ def init():
 
 	# if we did, initialise a pool of threads, one for each device (unit)
 
-	print "[blink1]: " + str(i)  + "device(s) found"
+	print "[blink1]: " + str(i) + " device(s) found"
 	global threadPool
 	threadPool = [None] * i
 	return True
