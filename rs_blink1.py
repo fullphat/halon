@@ -65,6 +65,9 @@ def init():
 		if (device.dev != None):
 			print "[blink1]: unit #" + str(i) + ": firmware " + device.get_version()
 
+		else:
+			break
+
 	print "[blink1]: scan complete"
 
 	# did we find any devices?
