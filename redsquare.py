@@ -126,7 +126,7 @@ def load_handler(name):
             libs[name] = lib
 
         else:
-	    sos_warn(name + ".device failed to initialise")
+	    sos_fail(name + ".device failed to initialise")
 
     except:
         sos.ClrDevice()
