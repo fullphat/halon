@@ -6,6 +6,7 @@
 import threading
 import struct
 import time
+import sos
 
 Blink1 = None
 threadPool = []
@@ -50,35 +51,64 @@ def init():
 	global Blink1
 	try:
 		from support.blink1 import Blink1
-		print "[blink1]: loaded support librsry"
+		sos.sos_info("Got support library")
 
 	except Exception, e:
-		print "[blink1]: couldn't load support library:", e
+		sos.sos_fail("Couldn't load support library:" + str(e))
 		return False
 
 	# run through available blink(1) devices
 
-	print "[blink1]: scanning for connected devices..."
+	sos.sos_print("Scanning for connected devices...")
 	global Blink1
 	for i in range(32):
 		device = Blink1(i)
 		if (device.dev != None):
-			print "[blink1]: unit #" + str(i) + ": firmware " + device.get_version()
+			sos.sos_print("unit #" + str(i) + ": firmware " + device.get_version())
 
 		else:
 			break
 
-	print "[blink1]: scan complete"
+	sos.sos_info("Scan complete")
 
 	# did we find any devices?
 
 	if i == 0:
-		print "[blink1]: no devices found!"
+		sos.sos_fail("No devices found!")
 		return False
 
 	# if we did, initialise a pool of threads, one for each device (unit)
 
-	print "[blink1]: " + str(i) + " device(s) found"
+	global Blink1
+	for j in range(i):
+		Blink1(j).fade_to_rgbn(800, 255, 0, 0, 0)
+	time.sleep(0.1)
+
+	for j in range(i):
+		Blink1(j).fade_to_rgbn(100, 255, 255, 0, 0)
+	time.sleep(0.1)
+
+	for j in range(i):
+		Blink1(j).fade_to_rgbn(100, 0, 255, 0, 0)
+	time.sleep(0.1)
+
+	for j in range(i):
+		Blink1(j).fade_to_rgbn(100, 0, 255, 255, 0)
+	time.sleep(0.1)
+
+	for j in range(i):
+		Blink1(j).fade_to_rgbn(100, 0, 0, 255, 0)
+	time.sleep(0.1)
+
+	for j in range(i):
+		Blink1(j).fade_to_rgbn(100, 255, 0, 255, 0)
+	time.sleep(0.1)
+
+	for j in range(i):
+		Blink1(j).fade_to_rgbn(600, 0, 0, 0, 0)
+
+	sos.sos_print(str(i) + " device(s) found")
+	sos.sos_print("Note that if you're using the V2 API, unit numbers must be doubled")
 	global threadPool
 	threadPool = [None] * i
 	return True
@@ -88,21 +118,27 @@ def init():
 # device handler
 # return bool,string (True,"OK") if query was handled, or false otherwise
 #
-def handle(queryDict):
-
-	# validate unit number first
-
-	_unit = '0'
-	if 'unit' in queryDict:
-		_unit = queryDict['unit'][0]
+def handle(queryDict, apiVersion=0, unit=0):
 
 	u = 0
-	try:
-		u = int(_unit)
 
-	except:
-		print "[blink1] invalid unit number"
-		return (False, "Invalid unit number")
+	if apiVersion == 2:
+		# this will be the unit number * 2
+		# to allow for support of dual LED devices
+		u = unit // 2
+
+	else:
+		# validate unit number first
+		_unit = '0'
+		if 'unit' in queryDict:
+			_unit = queryDict['unit'][0]
+
+		try:
+			u = int(_unit)
+
+		except:
+			print "[blink1] invalid unit number"
+			return (False, "Invalid unit number")
 
 	# check the unit isn't busy (thread is running)
 

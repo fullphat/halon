@@ -26,14 +26,11 @@ import threading
 from urlparse import urlparse, parse_qs
 import os
 import importlib
-
-_currentDevice = ''
-
+import sos
+_currentDevice = ""
 libs = { }
- 
-HOST = ''
+HOST = ""
 PORT = 6789
-
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # Terminal colours
@@ -49,28 +46,54 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-def sos_dev(text):
-    global _currentDevice
-    print "       [" + _currentDevice + "]: " + text
-
 def sos_warn(text):
-    print bcolors.WARNING + "[WARN] " + text + bcolors.ENDC
+    global _currentDevice
+    s = bcolors.WARNING
+    if _currentDevice != "":
+        s = s + "       {" + _currentDevice + "} "
+    print s + "[WARN] " + text + bcolors.ENDC
 
 def sos_fail(text):
-    print bcolors.FAIL + "[FAIL] " + text + bcolors.ENDC
+    global _currentDevice
+    s = bcolors.FAIL
+    if _currentDevice != "":
+        s = s + "       {" + _currentDevice + "} "
+    print s + "[FAIL] " + text + bcolors.ENDC
 
 def sos_ok(text):
-    print bcolors.OKGREEN + "[ OK ] " + text + bcolors.ENDC
+    global _currentDevice
+    s = bcolors.OKGREEN
+    if _currentDevice != "":
+        s = s + "       {" + _currentDevice + "} "
+    print s + "[ OK ] " + text + bcolors.ENDC
 
 def sos_out(text):
-    print bcolors.OKBLUE + "[INFO] " + text + bcolors.ENDC
+    global _currentDevice
+    s = bcolors.OKBLUE
+    if _currentDevice != "":
+        s = s + "       {" + _currentDevice + "} "
+    print s + "[INFO] " + text + bcolors.ENDC
 
 def sos_print(text):
-    print "[INFO] " + text
+    global _currentDevice
+    s = ""
+    if _currentDevice != "":
+        s = s + "       {" + _currentDevice + "} "
+    print s + "[INFO] " + text
 
 def sos_info(text):
-    print bcolors.WHITE + text + bcolors.ENDC
+    global _currentDevice
+    s = bcolors.WHITE
+    if _currentDevice != "":
+        s = s + "       {" + _currentDevice + "} "
+    print s + text + bcolors.ENDC
 
+def IsInt(str):
+    try:
+        int(str)
+        return True
+    except:
+        return False
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # SIGINT handler
@@ -91,11 +114,13 @@ def load_handler(name):
     global libs
     global _currentDevice
 
-    _currentDevice = name
+    sos.SetDevice(name)
 
     try:
         lib = importlib.import_module("rs_" + name, package=None)
         success = getattr(lib, 'init')()
+        sos.ClrDevice()
+
         if success:
 	    sos_ok(name + ".device loaded ok")
             libs[name] = lib
@@ -104,9 +129,8 @@ def load_handler(name):
 	    sos_warn(name + ".device failed to initialise")
 
     except:
-	print bcolors.WARNING + "[WARN]: " + name + ".device not found" + bcolors.ENDC
-
-    _currentDevice = ''
+        sos.ClrDevice()
+	sos_fail(name + ".device not found" + bcolors.ENDC)
 
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -175,22 +199,34 @@ def handle(queryDict):
 # return bool,string Tuple (e.g True,"OK") if query was
 # handled, or false otherwise
 #
-def handle_v2(device, queryDict):
+def handle_v2(device, unit, queryDict):
     global libs
+
+    result = False
+    hint = "Unknown device '" + device + "'"
+
+    sos.SetDevice(device)
 
     sos_out("(V2) Looking for device '" + device + "'...")
     try:
         dev = libs[device]
-        if dev == None:
-            sos_fail("(V2) Unknown device '" + device + "'")
-            return False, "unknown device '" + device + "'"
+        if dev != None:
+            # return the result of calling handler->handle()
+            result,hint = getattr(dev, 'handle')(queryDict, 2, unit)
 
-    except:
-        sos_fail("(V2) Unknown device '" + device + "'")
-        return False, "unknown device '" + device + "'"
+        else:
+            sos_fail("(V2) " + hint)
 
-    # return the result of calling handler->handle()
-    return getattr(dev, 'handle')(queryDict)
+    except TypeError:
+        hint = "This device does not support the V2 API"
+        sos_fail("(V2) " + hint)
+
+    except Exception, e:
+        hint = "Error communicating with device: " + str(e)
+        sos_fail("(V2) " + hint)
+
+    sos.ClrDevice()
+    return result,hint
 
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -232,11 +268,20 @@ def client_thread(conn):
             success,response = handle(d)
 
         elif path[0] == 'v2':
-            # v2 api expects following syntax: /v2/{device}?args...
-            if len(path) == 2:
+            # v2 api expects following syntax: /v2/{device}[/{unit=0}]?args...
+            unit = 0
+            if len(path) > 1:
+                # get unit
+                if len(path) > 2:
+                    s = path[2]
+                    if IsInt(s):
+                        unit = int(s)
+                    else:
+                        sos_warn("(V2) '" + s + "' is not a valid unit number")
+
                 # return result of v2 handler...
                 d = parse_qs(o.query)
-                success,response = handle_v2(path[1], d)
+                success,response = handle_v2(path[1], unit, d)
 
             else:
                 sos_warn("v2 api: missing device from path")
@@ -251,7 +296,12 @@ def client_thread(conn):
     reply = 'HTTP/1.1 200 OK\r\nContent-Length: ' + str(len(body)) + '\r\n\r\n' + body + '\r\n\r\n'
 
     # send it and close the socket...
-    sos_print('Sending reply "' + response + '"...')
+    if success:
+        sos_ok('Sending success reply "' + response + '"...')
+
+    else:
+        sos_fail('Sending failure reply "' + response + '"...')
+
     conn.sendall(reply)
     conn.close()
 
