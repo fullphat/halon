@@ -6,11 +6,11 @@
 #
 import threading
 import time
+import sos
 
 maxThread = None
 unicorn = None
 Image = None
-
 queue = None
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -46,18 +46,21 @@ def init():
 
 	try:
 		import unicornhathd as unicorn
-		print "    [unicornhat]: Got unicornhathd...'"
+		sos.sos_print("Got unicornhathd...'")
 
 	except:
-		print "    [unicornhat]: Couldn't load unicornhathd!"
+		sos.sos_fail("Couldn't load unicornhathd")
+		sos.sos_print("To install the support library, see:")
+		sos.sos_print("https://github.com/pimoroni/unicorn-hat-hd")
 		return False
 
 	try:
 		from PIL import Image, ImageDraw, ImageFont
-		print "    [unicornhat]: Got Pillow...'"
+		sos.sos_print("Got Pillow...'")
 
 	except:
-		print "    [unicornhat]: Pillow not installed.  Use 'sudo pip install pillow'"
+		sos.sos_fail("Pillow not installed")
+		sos.sos_print("Use 'sudo pip install pillow'")
 		return False
 
 	global queue
@@ -65,8 +68,7 @@ def init():
 
 	# initialise the HAT
 
-	print "    [unicornhat]: Configuring device..."
-	print "    [unicornhat]: [TBD: should load these settings from unicornhat.rc]"
+	sos.sos_print("Configuring device...")
 	#unicorn.set_layout(unicorn.HAT)
 	unicorn.rotation(90)
 	unicorn.brightness(0.7)

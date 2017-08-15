@@ -1,5 +1,5 @@
 # Redsquare
-VERSION = "0.3"
+VERSION = "0.4"
 # Copyright (c) 2017 full phat products
 #
 # Usage: python reqsquare.py [port]
@@ -7,6 +7,8 @@ VERSION = "0.3"
 # [port] will default to 6789 if not supplied
 #
 # Credit to binary tides for python threaded socket code
+#
+# 0.4 - added very basic support for the Pimoroni Unicorn Hat HD
 #
 # 0.3 - added support for the PCD8544 LCD display used in the
 #	orignal Nokia 3310 phones
@@ -145,7 +147,8 @@ def get_handlers():
     load_handler("blink1")
     load_handler("unicornhat")
     load_handler("pcd8544")
-    load_handler("xxx")			# test failure
+    load_handler("unicornhathd")
+#    load_handler("xxx")			# test failure
 
     sos_info("Loaded device handlers")
 
