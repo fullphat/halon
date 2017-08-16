@@ -22,7 +22,7 @@ FONT = ("/usr/share/fonts/truetype/droid/DroidSans.ttf", 11)
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # scroll_text(): scroll some text
 #
-def scroll_text(unicorn, text):
+def scroll_text(unicorn, text, icon=""):
 
 	if text == "":
 		return
@@ -33,7 +33,6 @@ def scroll_text(unicorn, text):
 
 	unicorn.rotation(90)
 
-
 	global Image
 	global ImageFont
 	global ImageDraw
@@ -43,26 +42,34 @@ def scroll_text(unicorn, text):
 	font_file, font_size = FONT
 	font = ImageFont.truetype(font_file, font_size)
 
-	#text_width, text_height = width, 0
-
 	# determine text size...
 	text_width, text_height = font.getsize(text)
+	text_width += width + text_x + 1
+
+	# if an icon name is provided, load it...
+	icn = None
+	if icon != "":
+		icn = Image.open('./icons/' + icon + '.png', 'r')
+		text_width += 16 + 2
+		text_x += 16 + 2
 
 	# create an 'empty' (black) bitmap to hold the text...
-	text_width += width + text_x + 1
-	image = Image.new("RGB", (text_width,max(16, text_height)), (0,0,0))
+	image = Image.new("RGBA", (text_width,max(16, text_height)), (0,0,0,0))
 	draw = ImageDraw.Draw(image)
-	offset_left = 0
+
+	# draw the icon (if provided)...
+	if icn != None:
+		image.paste(icn, (width,0), icn)
 
 	# draw the text into the bitmap...
-	draw.text((text_x + offset_left, text_y), text, (255,255,255), font=font)
-	offset_left += font.getsize(text)[0] + width
+	draw.text((text_x, text_y), text, (255,255,255), font=font)
+	#offset_left += font.getsize(text)[0] + width
 
 	for scroll in range(text_width - width):
 		for x in range(width):
 			for y in range(height):
 				pixel = image.getpixel((x+scroll, y))
-				r, g, b = [int(n) for n in pixel]
+				r, g, b, a = [int(n) for n in pixel]
 				unicorn.set_pixel(width-1-x, y, r, g, b)
 
 		unicorn.show()
@@ -141,11 +148,11 @@ def init():
 	sos.sos_print("Configuring device...")
 	#unicorn.set_layout(unicorn.HAT)
 	unicorn.brightness(1)
-	show_image(unicorn, "./icons/save.png")
-	time.sleep(0.5)
+	#show_image(unicorn, "./icons/save.png")
+	#time.sleep(0.5)
 	unicorn.off()
 
-	scroll_text(unicorn, "RSOS 2.21")
+	scroll_text(unicorn, "RSOS 2.21", "ok")
 
 	return True
 
@@ -202,22 +209,26 @@ def process(queryDict):
 
 	_device = '0'
 	mode = 'text'
+	icon = ''
 
-	# special case: if 'mode=off' supplied, just turn off and exit
+	# read variables...
+
+	if 'icon' in queryDict:
+		icon = queryDict['icon'][0]
 
 	if 'mode' in queryDict:
 		mode = queryDict['mode'][0]
 
-	if mode == 'off':
+
+	# process based on mode...
+
+	if mode == "off":
 		unicorn.off()
 		return (True, "Device turned off")
 
-	elif mode == 'icon':
+	elif mode == "icon":
 		# get supplied info
 		priority = 0
-		icon = ''
-		if 'icon' in queryDict:
-			icon = queryDict['icon'][0]
 
 		# required elements...
 		if icon == '':
@@ -227,8 +238,7 @@ def process(queryDict):
 #	if 'device' in queryDict:
 #		_device = queryDict['device'][0]
 
-	else:
-		# assume mode is "text"...
+	elif mode == "text":
 		_font = ''
 		_invert = '0'
 		text = ''
@@ -238,10 +248,13 @@ def process(queryDict):
 		if text != "":
 			# good to go!
 			sos.sos_print("Displaying '" + text + "'")
-			scroll_text(unicorn, text)
+			scroll_text(unicorn, text, icon)
 
 		else:
 			sos.sos_fail("No text to display")
+			return (False, "Nothing to do")
+
+	return (True, "OK")
 
 
 #	if 'invert' in queryDict:
