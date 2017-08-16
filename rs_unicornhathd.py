@@ -49,7 +49,14 @@ def scroll_text(unicorn, text, icon=""):
 	# if an icon name is provided, load it...
 	icn = None
 	if icon != "":
-		icn = Image.open('./icons/' + icon + '.png', 'r')
+		try:
+			icn = Image.open('./icons/16/' + icon + '.png', 'r')
+
+		except:
+			pass
+
+	# if the icon loaded ok, widen required bitmap...
+	if icn != None:
 		text_width += 16 + 2
 		text_x += 16 + 2
 
