@@ -10,8 +10,6 @@ Image = None
 ImageFont = None
 ImageDraw = None
 
-FONT = ("/usr/share/fonts/truetype/droid/DroidSans.ttf", 11)
-
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # scroll_text(): scroll some text
@@ -25,14 +23,25 @@ def scroll_text(unicorn, text, icon=""):
 	text_x = width
 	text_y = 2
 
-	unicorn.rotation(90)
+	# needs sorting!  why are my two HATs oriented differently?
+	if height == 8:
+		unicorn.rotation(0)
+
+	else:
+		unicorn.rotation(90)
 
 	global Image
 	global ImageFont
 	global ImageDraw
-	global FONT
 
 	# get the font...
+
+	if height == 8:
+		FONT = ("/usr/share/fonts/truetype/droid/DroidSans.ttf", 8)
+
+	else:
+		FONT = ("/usr/share/fonts/truetype/droid/DroidSans.ttf", 11)
+
 	font_file, font_size = FONT
 	font = ImageFont.truetype(font_file, font_size)
 
@@ -74,7 +83,11 @@ def scroll_text(unicorn, text, icon=""):
 				unicorn.set_pixel(width-1-x, y, r, g, b)
 
 		unicorn.show()
-		time.sleep(0.01)
+		if height == 8:
+			time.sleep(0.03)
+
+		else:
+			time.sleep(0.01)
 
 	unicorn.off()
 

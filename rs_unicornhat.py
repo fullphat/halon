@@ -51,11 +51,11 @@ def init():
 		return False
 
 	try:
-		import unicornhathd as unicorn
-		sos.sos_print("Got unicornhathd...'")
+		import unicornhat as unicorn
+		sos.sos_print("Got unicornhat...'")
 
 	except:
-		sos.sos_fail("Couldn't load unicornhathd")
+		sos.sos_fail("Couldn't load unicornhat")
 		sos.sos_print("To install the support library, see:")
 		sos.sos_print("https://github.com/pimoroni/unicorn-hat-hd")
 		return False
