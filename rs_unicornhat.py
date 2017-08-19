@@ -4,30 +4,24 @@
 # 8x8 16K RGB LED Matrix
 # Copyright (c) 2017 full phat products
 #
+
 import threading
 import time
+import sos
 
-maxThread = None
 unicorn = None
-Image = None
+unicornLib = None
 
+# number of concurrent threads (matches detected devices)
+maxThread = None
+
+# list of queued requests
 queue = None
 
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# show_image(): load and display the given 8x8 image
-#
-def show_image(unicorn, filename):
-	global Image
-	img = Image.open(filename)
-	for x in range(8):
-		for y in range(8):
-			pixel = img.getpixel((x,y))
-			r, g, b = int(pixel[0]),int(pixel[1]),int(pixel[2])
-			unicorn.set_pixel(x, y, r, g, b)
-	unicorn.show()
+
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# flash: alternate between the two given 8x8 images
+# flash: alternate between the two given images
 #
 def flash_image(unicorn, statusIcon, imageIcon, repeat=3):
 	for i in range(repeat):
@@ -43,40 +37,50 @@ def flash_image(unicorn, statusIcon, imageIcon, repeat=3):
 def init():
 	global unicorn
 	global Image
+	global ImageDraw
+	global ImageFont
+
+	global unicornlib
 
 	try:
-		import unicornhat as unicorn
-		print "    [unicornhat]: Got unicornhat...'"
+		import unicornlib
+		sos.sos_print("Got unicornlib...'")
 
 	except:
-		print "    [unicornhat]: Couldn't load unicornhat!"
+		sos.sos_fail("Couldn't load unicornlib")
 		return False
 
 	try:
-		from PIL import Image
-		print "    [unicornhat]: Got Pillow...'"
+		import unicornhathd as unicorn
+		sos.sos_print("Got unicornhathd...'")
 
 	except:
-		print "    [unicornhat]: Pillow not installed.  Use 'sudo pip install pillow'"
+		sos.sos_fail("Couldn't load unicornhathd")
+		sos.sos_print("To install the support library, see:")
+		sos.sos_print("https://github.com/pimoroni/unicorn-hat-hd")
 		return False
+
 
 	global queue
 	queue = []
 
 	# initialise the HAT
+	sos.sos_print("Configuring device...")
+	#unicorn.set_layout(unicorn.HAT)
+	unicorn.brightness(1)
+	#show_image(unicorn, "./icons/save.png")
+	#time.sleep(0.5)
+	unicorn.off()
 
-	print "    [unicornhat]: Configuring device..."
-	print "    [unicornhat]: [TBD: should load these settings from unicornhat.rc]"
-	unicorn.set_layout(unicorn.HAT)
-	unicorn.rotation(180)
-	unicorn.brightness(0.4)
+	unicornlib.scroll_text(unicorn, "RSOS 2.07", "info")
+
 	return True
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # device handler
 # return bool,string (True,"OK") if query was handled, or false otherwise
 #
-def handle(queryDict):
+def handle(queryDict, apiVersion=0, unit=0):
 
 	# queue the request...
 
@@ -120,86 +124,95 @@ def device_thread():
 def process(queryDict):
 
 	global unicorn
+	global unicornlib
 
 	# set defaults
 
 	_device = '0'
-	_mode = 'scroll'
+	mode = 'text'
+	icon = ''
 
-	# special case: if 'mode=off' supplied, just turn off and exit
+	# read variables...
+
+	if 'icon' in queryDict:
+		icon = queryDict['icon'][0]
 
 	if 'mode' in queryDict:
-		_mode = queryDict['mode'][0]
+		mode = queryDict['mode'][0]
 
-	if _mode == 'off':
+
+	# process based on mode...
+
+	if mode == "off":
 		unicorn.off()
 		return (True, "Device turned off")
 
+	elif mode == "icon":
+		# get supplied info
+		priority = 0
 
-
-	_priority = 0
-	_icon = ''
-
-	# get supplied info
+		# required elements...
+		if icon == '':
+			print '    [unicornhat]: no icon supplied!'
+			return (False, "No icon provided")
 
 #	if 'device' in queryDict:
 #		_device = queryDict['device'][0]
 
-	if 'icon' in queryDict:
-		_icon = queryDict['icon'][0]
+	elif mode == "text":
+		_font = ''
+		_invert = '0'
+		text = ''
+		if 'text' in queryDict:
+			text = queryDict['text'][0]
 
-	# required elements...
+		if text != "":
+			# good to go!
+			sos.sos_print("Displaying '" + text + "'")
+			unicornlib.scroll_text(unicorn, text, icon)
 
-	if _icon == '':
-		print '    [unicornhat]: no icon supplied!'
-		return (False, "No icon provided")
+		else:
+			sos.sos_fail("No text to display")
+			return (False, "Nothing to do")
 
-	# optional elements...
+	return (True, "OK")
 
-	_font = ''
-	_text = ''
-	_invert = '0'
-
-
-
-
-
-#	if 'text' in queryDict:
-#		_text = queryDict['text'][0]
 
 #	if 'invert' in queryDict:
 #		_invert = queryDict['invert'][0]
-
 #	if 'font' in queryDict:
 #		_font = queryDict['font'][0]
 
-	if 'priority' in queryDict:
-		_priority = queryDict['priority'][0]
+#	if 'priority' in queryDict:
+#		_priority = queryDict['priority'][0]
 
 	# determine status icon to use
 
-	pri = 0
-	try:
-		pri = int(_priority)
+#	pri = 0
+#	try:
+#		pri = int(_priority)
 
-	except:
-		print '    [unicornhat]: bad priority: ' + _priority
+#	except:
+#		print '    [unicornhat]: bad priority: ' + _priority
 
-	if pri > 1:
-		_statusIcon = 'alert'
+#	if pri > 1:
+#		_statusIcon = 'alert'
 
-	elif pri == 1:
-		_statusIcon = 'warn'
+#	elif pri == 1:
+#		_statusIcon = 'warn'
 
-	else:
-		_statusIcon = 'info'
+#	else:
+#		_statusIcon = 'info'
 
 
 	# good to go!
 
-	flash_image(unicorn, _statusIcon, _icon)
+#	flash_image(unicorn, _statusIcon, _icon)
 
 #	if _text == "":
 #		return (False, "Nothing to display")
+
+if __name__ == '__main__':
+	init()
 
 
