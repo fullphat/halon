@@ -9,105 +9,16 @@ import threading
 import time
 import sos
 
-maxThread = None
 unicorn = None
-Image = None
-ImageFont = None
-ImageDraw = None
+unicornLib = None
+
+# number of concurrent threads (matches detected devices)
+maxThread = None
+
+# list of queued requests
 queue = None
 
-FONT = ("/usr/share/fonts/truetype/droid/DroidSans.ttf", 11)
 
-
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# scroll_text(): scroll some text
-#
-def scroll_text(unicorn, text, icon=""):
-
-	if text == "":
-		return
-
-	width, height = unicorn.get_shape()
-	text_x = width
-	text_y = 2
-
-	unicorn.rotation(90)
-
-	global Image
-	global ImageFont
-	global ImageDraw
-	global FONT
-
-	# get the font...
-	font_file, font_size = FONT
-	font = ImageFont.truetype(font_file, font_size)
-
-	# determine text size...
-	text_width, text_height = font.getsize(text)
-	text_width += width + text_x + 1
-
-	# if an icon name is provided, load it...
-	icn = None
-	if icon != "":
-		try:
-			icn = Image.open('./icons/16/' + icon + '.png', 'r')
-
-		except:
-			pass
-
-	# if the icon loaded ok, widen required bitmap...
-	if icn != None:
-		text_width += 16 + 2
-		text_x += 16 + 2
-
-	# create an 'empty' (black) bitmap to hold the text...
-	image = Image.new("RGBA", (text_width,max(16, text_height)), (0,0,0,0))
-	draw = ImageDraw.Draw(image)
-
-	# draw the icon (if provided)...
-	if icn != None:
-		image.paste(icn, (width,0), icn)
-
-	# draw the text into the bitmap...
-	draw.text((text_x, text_y), text, (255,255,255), font=font)
-	#offset_left += font.getsize(text)[0] + width
-
-	for scroll in range(text_width - width):
-		for x in range(width):
-			for y in range(height):
-				pixel = image.getpixel((x+scroll, y))
-				r, g, b, a = [int(n) for n in pixel]
-				unicorn.set_pixel(width-1-x, y, r, g, b)
-
-		unicorn.show()
-		time.sleep(0.01)
-
-	unicorn.off()
-
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# show_image(): load and display the given image
-#
-def show_image(unicorn, filename):
-
-	# load the pic...
-	global Image
-	img = Image.open(filename)
-	width, height = unicorn.get_shape()
-
-	unicorn.rotation(180)
-
-	valid = False
-	for x in range(width):
-		for y in range(height):
-			pixel = img.getpixel((y,x))
-			r, g, b = int(pixel[0]),int(pixel[1]),int(pixel[2])
-			if r or g or b:
-				valid = True
-
-			unicorn.set_pixel(x, y, r, g, b)
-
-	if valid:
-		unicorn.show()
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # flash: alternate between the two given images
@@ -129,6 +40,16 @@ def init():
 	global ImageDraw
 	global ImageFont
 
+	global unicornlib
+
+	try:
+		import unicornlib
+		sos.sos_print("Got unicornlib...'")
+
+	except:
+		sos.sos_fail("Couldn't load unicornlib")
+		return False
+
 	try:
 		import unicornhathd as unicorn
 		sos.sos_print("Got unicornhathd...'")
@@ -139,14 +60,6 @@ def init():
 		sos.sos_print("https://github.com/pimoroni/unicorn-hat-hd")
 		return False
 
-	try:
-		from PIL import Image, ImageDraw, ImageFont
-		sos.sos_print("Got Pillow...'")
-
-	except:
-		sos.sos_fail("Pillow not installed")
-		sos.sos_print("Use 'sudo pip install pillow'")
-		return False
 
 	global queue
 	queue = []
@@ -159,7 +72,7 @@ def init():
 	#time.sleep(0.5)
 	unicorn.off()
 
-	scroll_text(unicorn, "RSOS 2.21", "ok")
+	unicornlib.scroll_text(unicorn, "RSOS 2.21", "ok")
 
 	return True
 
@@ -211,6 +124,7 @@ def device_thread():
 def process(queryDict):
 
 	global unicorn
+	global unicornlib
 
 	# set defaults
 
@@ -255,7 +169,7 @@ def process(queryDict):
 		if text != "":
 			# good to go!
 			sos.sos_print("Displaying '" + text + "'")
-			scroll_text(unicorn, text, icon)
+			unicornlib.scroll_text(unicorn, text, icon)
 
 		else:
 			sos.sos_fail("No text to display")
