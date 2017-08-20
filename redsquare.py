@@ -1,5 +1,5 @@
 # Redsquare
-VERSION = "0.4"
+VERSION = "0.5z"
 # Copyright (c) 2017 full phat products
 #
 # Usage: python reqsquare.py [port]
@@ -7,6 +7,10 @@ VERSION = "0.4"
 # [port] will default to 6789 if not supplied
 #
 # Credit to binary tides for python threaded socket code
+#
+# 0.5 - modded unicornhat.device to share new Unicorn lib
+#
+#     - ignores 'facicon.ico' browser requests
 #
 # 0.4 - added very basic support for the Pimoroni Unicorn Hat HD
 #
@@ -258,6 +262,10 @@ def client_thread(conn):
     if o.path == "":
         sos_warn("null path: returning our version info")
         response = 'Welcome to RedSquare ' + VERSION + '!<br>Copyright (c) 2017 full phat products<br>See http://fullphat.net/redsquare/ for more details<br>'
+
+    elif o.path == "favicon.ico":
+        sos_out("ignoring favicon request")
+        response = ""
 
     else:
 
