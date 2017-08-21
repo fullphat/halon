@@ -5,6 +5,29 @@ import sys
 
 _curDev = ""
 
+
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+# ConfigParser Helpers
+#
+#
+def ConfigTryGetInt(config, section, name):
+    try:
+        i = config.getint(section, name)
+        return True, i
+
+    except:
+        return False, ""
+
+def ConfigTryGetFloat(config, section, name):
+    try:
+        f = config.getfloat(section, name)
+        return True, f
+
+    except:
+        return False, ""
+
+
+
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # Terminal colours
 #

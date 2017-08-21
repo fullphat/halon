@@ -14,7 +14,7 @@ ImageDraw = None
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # scroll_text(): scroll some text
 #
-def scroll_text(unicorn, text, icon=""):
+def scroll_text(unicorn, rotationOffset, text, icon=""):
 
 	if text == "":
 		return
@@ -25,7 +25,7 @@ def scroll_text(unicorn, text, icon=""):
 
 	# 8x8 hat is wired up differently... :-)
 	if height == 8:
-		unicorn.rotation(180)
+		unicorn.rotation(rotationOffset)
 		text_y = 1
 
 	else:
