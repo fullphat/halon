@@ -168,6 +168,28 @@ def process(queryDict):
 
 		if text != "":
 			# good to go!
+			p = 0
+
+			if icon == "":
+				if 'priority' in queryDict:
+					try:
+						p = int(queryDict['priority'][0])
+
+					except:
+						sos.sos_warn("Invalid priority specified")
+
+				if p == 1:
+					# high
+					icon = "system-warning"
+
+				elif p > 1:
+					# urgent
+					icon = "system-urgent"
+
+				else:
+					# info
+					icon = "system-info"
+
 			sos.sos_print("Displaying '" + text + "'")
 			unicornlib.scroll_text(unicorn, text, icon)
 
