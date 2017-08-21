@@ -14,7 +14,7 @@ ImageDraw = None
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # scroll_text(): scroll some text
 #
-def scroll_text(unicorn, text, icon=""):
+def scroll_text(unicorn, rotationOffset, text, icon=""):
 
 	if text == "":
 		return
@@ -23,9 +23,10 @@ def scroll_text(unicorn, text, icon=""):
 	text_x = width
 	text_y = 2
 
-	# needs sorting!  why are my two HATs oriented differently?
+	# 8x8 hat is wired up differently... :-)
 	if height == 8:
-		unicorn.rotation(0)
+		unicorn.rotation(rotationOffset)
+		text_y = 1
 
 	else:
 		unicorn.rotation(90)
@@ -37,7 +38,8 @@ def scroll_text(unicorn, text, icon=""):
 	# get the font...
 
 	if height == 8:
-		FONT = ("/usr/share/fonts/truetype/droid/DroidSans.ttf", 8)
+		FONT = ("/usr/share/fonts/truetype/droid/DroidSansMono.ttf", 7)
+		#FONT = ("/usr/share/fonts/truetype/droid/DroidSans.ttf", 7)
 
 	else:
 		FONT = ("/usr/share/fonts/truetype/droid/DroidSans.ttf", 11)
@@ -63,11 +65,13 @@ def scroll_text(unicorn, text, icon=""):
 		text_width += width + 2
 		text_x += width + 2
 
+	#print '***' + str(max(height,text_height))
+
 	# create an 'empty' (black) bitmap to hold the text...
 	image = Image.new("RGBA", (text_width,max(height, text_height)), (0,0,0,0))
 	draw = ImageDraw.Draw(image)
 
-	# draw the icon (if provided)...
+	# draw the icon (if we have one)...
 	if icn != None:
 		image.paste(icn, (width,0), icn)
 
@@ -80,7 +84,13 @@ def scroll_text(unicorn, text, icon=""):
 			for y in range(height):
 				pixel = image.getpixel((x+scroll, y))
 				r, g, b, a = [int(n) for n in pixel]
-				unicorn.set_pixel(width-1-x, y, r, g, b)
+				if width == 8:
+					# 8x8 hat is wired differently!
+					unicorn.set_pixel(x, y, r, g, b)
+
+				else:
+					unicorn.set_pixel(width-1-x, y, r, g, b)
+
 
 		unicorn.show()
 		if height == 8:

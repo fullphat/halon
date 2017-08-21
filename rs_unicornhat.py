@@ -17,8 +17,7 @@ maxThread = None
 
 # list of queued requests
 queue = None
-
-
+RotationOffset = 0
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # flash: alternate between the two given images
@@ -66,13 +65,39 @@ def init():
 
 	# initialise the HAT
 	sos.sos_print("Configuring device...")
+
+	fBright = 0.7
+	global RotationOffset
+
+	import ConfigParser
+	config = ConfigParser.RawConfigParser(allow_no_value=True)
+	files = config.read('etc/unicorn.rc')
+	if len(files) == 1:
+		# got config...
+		sos.sos_print("Configuration file found...")
+		success,f = sos.ConfigTryGetFloat(config, "general", "brightness")
+		if success:
+			fBright = f
+
+		success,i = sos.ConfigTryGetInt(config, "general", "rotation")
+		if success:
+			RotationOffset = i
+
+	else:
+		# no config
+		sos.sos_info("No configuration file: using defaults")
+
+	sos.sos_info("Brightness: " + str(fBright))
+	sos.sos_info("Rotation:   " + str(RotationOffset))
+
 	#unicorn.set_layout(unicorn.HAT)
-	unicorn.brightness(1)
+	unicorn.brightness(fBright)
 	#show_image(unicorn, "./icons/save.png")
 	#time.sleep(0.5)
 	unicorn.off()
 
-	unicornlib.scroll_text(unicorn, "RSOS 2.07", "info")
+
+	unicornlib.scroll_text(unicorn, RotationOffset, "RSOS 2.07", "info")
 
 	return True
 
@@ -168,8 +193,9 @@ def process(queryDict):
 
 		if text != "":
 			# good to go!
+			global RotationOffset
 			sos.sos_print("Displaying '" + text + "'")
-			unicornlib.scroll_text(unicorn, text, icon)
+			unicornlib.scroll_text(unicorn, RotationOffset, text, icon)
 
 		else:
 			sos.sos_fail("No text to display")
