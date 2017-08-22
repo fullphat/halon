@@ -1,5 +1,5 @@
 # Redsquare
-VERSION = "0.6"
+VERSION = "0.7"
 # Copyright (c) 2017 full phat products
 #
 # Usage: python reqsquare.py [port]
@@ -7,6 +7,8 @@ VERSION = "0.6"
 # [port] will default to 6789 if not supplied
 #
 # Credit to binary tides for python threaded socket code
+#
+# 0.7 - bumped
 #
 # 0.6 - renamed some internal functions
 #
