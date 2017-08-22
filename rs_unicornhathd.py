@@ -72,7 +72,7 @@ def init():
 	#time.sleep(0.5)
 	unicorn.off()
 
-	unicornlib.scroll_text(unicorn, "RSOS 2.21", "ok")
+	unicornlib.scroll_text(unicorn, 90, "RSOS 2.21", "ok")
 
 	return True
 
@@ -83,7 +83,6 @@ def init():
 def handle(queryDict, apiVersion=0, unit=0):
 
 	# queue the request...
-
 	global queue
 	queue.append(queryDict)
 
@@ -191,7 +190,7 @@ def process(queryDict):
 					icon = "system-info"
 
 			sos.sos_print("Displaying '" + text + "'")
-			unicornlib.scroll_text(unicorn, text, icon)
+			unicornlib.scroll_text(unicorn, 90, text, icon)
 
 		else:
 			sos.sos_fail("No text to display")

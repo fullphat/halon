@@ -151,6 +151,8 @@ def process(queryDict):
 	global unicorn
 	global unicornlib
 
+	global RotationOffset
+
 	# set defaults
 
 	_device = '0'
