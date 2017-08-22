@@ -49,11 +49,11 @@ def privLog(col, level, text):
 
     s = ""
 
+    # level...
+    s = s + col + "[" + level + "] " + bcolors.ENDC
+
     # thread name...
     s = s + "(" +  str(threading.current_thread().name) + ") "
-
-    # level info...
-    s = s + col + "[" + level + "] " + bcolors.ENDC
 
     # current device...
     if _curDev != "":
