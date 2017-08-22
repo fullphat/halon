@@ -2,6 +2,7 @@
 # Copyright (c) 2017 full phat products
 #
 import sys
+import threading
 
 _curDev = ""
 
@@ -42,47 +43,73 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-def sos_warn(text):
+def privLog(col, level, text):
+    global threading
     global _curDev
-    s = bcolors.WARNING
+
+    s = ""
+
+    # thread name...
+    s = s + "(" +  str(threading.current_thread().name) + ") "
+
+    # level info...
+    s = s + col + "[" + level + "] " + bcolors.ENDC
+
+    # current device...
     if _curDev != "":
-        s = s + "       {" + _curDev + "} "
-    print s + "[WARN] " + text + bcolors.ENDC
+        s = s + "{" + _curDev + "} "
+
+    # text...
+    s = s + text
+    return s
+
+def sos_warn(text):
+    print privLog(bcolors.WARNING, "WARN", text)    
+    #global _curDev
+    #s = bcolors.WARNING
+    #if _curDev != "":
+    #    s = s + "       {" + _curDev + "} "
+    #print s + "[WARN] " + text + bcolors.ENDC
 
 def sos_fail(text):
-    global _curDev
-    s = bcolors.FAIL
-    if _curDev != "":
-        s = s + "       {" + _curDev + "} "
-    print s + "[FAIL] " + text + bcolors.ENDC
+    print privLog(bcolors.FAIL, "FAIL", text)    
+    #global _curDev
+    #s = bcolors.FAIL
+    #if _curDev != "":
+    #    s = s + "       {" + _curDev + "} "
+    #print s + "[FAIL] " + text + bcolors.ENDC
 
 def sos_ok(text):
-    global _curDev
-    s = bcolors.OKGREEN
-    if _curDev != "":
-        s = s + "       {" + _curDev + "} "
-    print s + "[ OK ] " + text + bcolors.ENDC
+    print privLog(bcolors.OKGREEN, "OK", text)    
+    #global _curDev
+    #s = bcolors.OKGREEN
+    #if _curDev != "":
+    #    s = s + "       {" + _curDev + "} "
+    #print s + "[ OK ] " + text + bcolors.ENDC
 
 def sos_info(text):
-    global _curDev
-    s = bcolors.OKBLUE
-    if _curDev != "":
-        s = s + "       {" + _curDev + "} "
-    print s + "[INFO] " + text + bcolors.ENDC
+    print privLog(bcolors.OKBLUE, "INFO", text)    
+    #global _curDev
+    #s = bcolors.OKBLUE
+    #if _curDev != "":
+    #    s = s + "       {" + _curDev + "} "
+    #print s + "[INFO] " + text + bcolors.ENDC
 
 def sos_print(text):
-    global _curDev
-    s = ""
-    if _curDev != "":
-        s = s + "       {" + _curDev + "} "
-    print s + "[INFO] " + text
+    sos_info(text)
+    #global _curDev
+    #s = ""
+    #if _curDev != "":
+    #    s = s + "       {" + _curDev + "} "
+    #print s + "[INFO] " + text
 
 def sos_bold(text):
-    global _curDev
-    s = bcolors.WHITE
-    if _curDev != "":
-        s = s + "       {" + _curDev + "} "
-    print s + text + bcolors.ENDC
+    print privLog(bcolors.WHITE, "", text)    
+    #global _curDev
+    #s = bcolors.WHITE
+    #if _curDev != "":
+    #    s = s + "       {" + _curDev + "} "
+    #print s + text + bcolors.ENDC
 
 def SetDevice(text):
     global _curDev

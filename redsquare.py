@@ -1,5 +1,5 @@
 # Redsquare
-VERSION = "0.5z"
+VERSION = "0.6"
 # Copyright (c) 2017 full phat products
 #
 # Usage: python reqsquare.py [port]
@@ -7,6 +7,8 @@ VERSION = "0.5z"
 # [port] will default to 6789 if not supplied
 #
 # Credit to binary tides for python threaded socket code
+#
+# 0.6 - renamed some internal functions
 #
 # 0.5 - modded unicornhat.device to share new Unicorn lib
 #
@@ -111,10 +113,10 @@ def signal_handler(signal, frame):
     sys.exit()
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# attempt to load the specified handler and, if it loads
-# okay, initialise it by calling its Init() method
+# attempt to load the specified device handler and, if it
+# loads okay, initialise it by calling its Init() method
 #
-def load_handler(name):
+def open_device(name):
     sos_out("opening " + name + ".device...")
 
     global libs
@@ -140,19 +142,19 @@ def load_handler(name):
 
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# load up handlers - should be more dynamic (e.g. from
-# a .conf file, or enumerating a directory)
+# load up device handlers - should be more dynamic (e.g.
+# from a .conf file, or enumerating a directory)
 #
-def get_handlers():
+def get_devices():
     print ""
     sos_info("Loading device handlers...")
-    load_handler("null")
-    load_handler("max7219")
-    load_handler("blink1")
-    load_handler("unicornhat")
-    load_handler("pcd8544")
-    load_handler("unicornhathd")
-#    load_handler("xxx")			# test failure
+    open_device("null")
+    open_device("max7219")
+    open_device("blink1")
+    open_device("unicornhat")
+    open_device("pcd8544")
+    open_device("unicornhathd")
+#    open_device("xxx")			# test failure
 
     sos_info("Loaded device handlers")
 
@@ -221,6 +223,11 @@ def handle_v2(device, unit, queryDict):
             # return the result of calling handler->handle()
             result,hint = getattr(dev, 'handle')(queryDict, 2, unit)
 
+            # talk to the device using a new thread...
+            #thread = threading.Thread(target=do_io_thread, args=(dev,queryDict,2,unit))
+            #thread.daemon = True
+            #thread.start()
+
         else:
             sos_fail("(V2) " + hint)
 
@@ -234,6 +241,15 @@ def handle_v2(device, unit, queryDict):
 
     sos.ClrDevice()
     return result,hint
+
+
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+# NOT USED
+#
+def do_io_thread(deviceObj, queryDict, apiVersion, unit):
+
+    # return the result of calling handler->handle()
+    result,hint = getattr(deviceObject, 'handle')(queryDict, apiVersion, unit)
 
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -339,7 +355,7 @@ if len(sys.argv) > 1:
 signal.signal(signal.SIGINT, signal_handler)
 
 # load up our device handlers...
-get_handlers()
+get_devices()
 
 # start listening...
 sos_info("Opening socket...")
