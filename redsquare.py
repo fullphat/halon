@@ -372,6 +372,7 @@ except socket.error as msg:
 s.listen(10)
 
 print ""
+sos_info('RedSquare ' + VERSION)
 sos_info('Now listening for incoming requests on port ' + str(PORT))
 print ""
  
