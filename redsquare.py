@@ -43,60 +43,7 @@ HOST = ""
 PORT = 6789
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# Terminal colours
-#
-class bcolors:
-    WHITE = '\033[97m'
-    MAGENTA = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
-def sos_warn(text):
-    global _currentDevice
-    s = bcolors.WARNING
-    if _currentDevice != "":
-        s = s + "       {" + _currentDevice + "} "
-    print s + "[WARN] " + text + bcolors.ENDC
-
-def sos_fail(text):
-    global _currentDevice
-    s = bcolors.FAIL
-    if _currentDevice != "":
-        s = s + "       {" + _currentDevice + "} "
-    print s + "[FAIL] " + text + bcolors.ENDC
-
-def sos_ok(text):
-    global _currentDevice
-    s = bcolors.OKGREEN
-    if _currentDevice != "":
-        s = s + "       {" + _currentDevice + "} "
-    print s + "[ OK ] " + text + bcolors.ENDC
-
-def sos_out(text):
-    global _currentDevice
-    s = bcolors.OKBLUE
-    if _currentDevice != "":
-        s = s + "       {" + _currentDevice + "} "
-    print s + "[INFO] " + text + bcolors.ENDC
-
-def sos_print(text):
-    global _currentDevice
-    s = ""
-    if _currentDevice != "":
-        s = s + "       {" + _currentDevice + "} "
-    print s + "[INFO] " + text
-
-def sos_info(text):
-    global _currentDevice
-    s = bcolors.WHITE
-    if _currentDevice != "":
-        s = s + "       {" + _currentDevice + "} "
-    print s + text + bcolors.ENDC
+# helpers
 
 def IsInt(str):
     try:
@@ -110,7 +57,7 @@ def IsInt(str):
 #
 def signal_handler(signal, frame):
     print ''
-    sos_warn('SIGINT received: ending...')
+    sos.sos_warn('SIGINT received: ending...')
     s.close()
     sys.exit()
 
@@ -119,7 +66,7 @@ def signal_handler(signal, frame):
 # loads okay, initialise it by calling its Init() method
 #
 def open_device(name):
-    sos_out("opening " + name + ".device...")
+    sos.sos_info("opening " + name + ".device...")
 
     global libs
     global _currentDevice
@@ -132,15 +79,15 @@ def open_device(name):
         sos.ClrDevice()
 
         if success:
-	    sos_ok(name + ".device loaded ok")
+	    sos.sos_ok(name + ".device loaded ok")
             libs[name] = lib
 
         else:
-	    sos_fail(name + ".device failed to initialise")
+	    sos.sos_fail(name + ".device failed to initialise")
 
     except:
         sos.ClrDevice()
-	sos_fail(name + ".device not found" + bcolors.ENDC)
+	sos.sos_fail(name + ".device not found" + bcolors.ENDC)
 
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -149,7 +96,7 @@ def open_device(name):
 #
 def get_devices():
     print ""
-    sos_info("Loading device handlers...")
+    sos.sos_info("Loading device handlers...")
     open_device("null")
     open_device("max7219")
     open_device("blink1")
@@ -158,7 +105,7 @@ def get_devices():
     open_device("unicornhathd")
 #    open_device("xxx")			# test failure
 
-    sos_info("Loaded device handlers")
+    sos.sos_note("Loaded device handlers")
 
 #    print libs
 
@@ -218,7 +165,7 @@ def handle_v2(device, unit, queryDict):
 
     sos.SetDevice(device)
 
-    sos_out("(V2) Looking for device '" + device + "'...")
+    sos.sos_info("(V2) Looking for device '" + device + "'...")
     try:
         dev = libs[device]
         if dev != None:
@@ -231,15 +178,15 @@ def handle_v2(device, unit, queryDict):
             #thread.start()
 
         else:
-            sos_fail("(V2) " + hint)
+            sos.sos_fail("(V2) " + hint)
 
     except TypeError:
         hint = "This device does not support the V2 API"
-        sos_fail("(V2) " + hint)
+        sos.sos_fail("(V2) " + hint)
 
     except Exception, e:
         hint = "Error communicating with device: " + str(e)
-        sos_fail("(V2) " + hint)
+        sos.sos_fail("(V2) " + hint)
 
     sos.ClrDevice()
     return result,hint
@@ -258,13 +205,15 @@ def do_io_thread(deviceObj, queryDict, apiVersion, unit):
 # connection handler
 # 
 def client_thread(conn):
-    request = conn.recv(2048)
 
+    global sos
+
+    request = conn.recv(4096)
     uri = get_url(request)
-    sos_print("Request is '" + uri + "'")
+    sos.sos_note("Request is '" + uri + "'")
 
     success = False
-    response = 'ERROR'
+    response = 'BadRequest'
 
     try:
         o = urlparse(uri.strip('/'))
@@ -272,21 +221,18 @@ def client_thread(conn):
         #print 'path: ' + o.path
 
     except:
-        sos_warn("couldn't parse the URL")
-        response = 'Invalid URL supplied'
+        sos.sos_fail("Couldn't parse the URL")
 
     # if empty path return welcome text...
 
     if o.path == "":
-        sos_warn("null path: returning our version info")
+        sos.sos_warn("Empty path: returning our version info")
         response = 'Welcome to RedSquare ' + VERSION + '!<br>Copyright (c) 2017 full phat products<br>See http://fullphat.net/redsquare/ for more details<br>'
 
     elif o.path == "favicon.ico":
-        sos_out("ignoring favicon request")
-        response = ""
+        sos.sos_info("Ignoring favicon request...")
 
     else:
-
         # split the path up...
         path = o.path.split('/')
 
@@ -306,19 +252,17 @@ def client_thread(conn):
                     if IsInt(s):
                         unit = int(s)
                     else:
-                        sos_warn("(V2) '" + s + "' is not a valid unit number")
+                        sos.sos_warn("(V2) '" + s + "' is not a valid unit number")
 
                 # return result of v2 handler...
                 d = parse_qs(o.query)
                 success,response = handle_v2(path[1], unit, d)
 
             else:
-                sos_warn("v2 api: missing device from path")
-                response = "Missing {device} from path"
+                sos.sos_warn("(V2) Missing device from path")
 
         else:
-            sos_fail("invalid api version specified")
-            response = "Invalid API version specified"
+            sos.sos_fail("Invalid api version specified")
 
     # build the http reply...
     body = "<html><body>" + response + "</body></html>"
@@ -326,10 +270,10 @@ def client_thread(conn):
 
     # send it and close the socket...
     if success:
-        sos_ok('Sending success reply "' + response + '"...')
+        sos.sos_ok('Sending success reply "' + response + '"...')
 
     else:
-        sos_fail('Sending failure reply "' + response + '"...')
+        sos.sos_warn('Sending failure reply "' + response + '"...')
 
     conn.sendall(reply)
     conn.close()
@@ -337,8 +281,9 @@ def client_thread(conn):
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # main()
 #
+
 print ''
-sos_info('RedSquare ' + VERSION)
+sos.sos_note('RedSquare ' + VERSION)
 print 'Copyright (c) 2016-2017 full phat products'
 
 if len(sys.argv) > 1:
@@ -350,7 +295,7 @@ if len(sys.argv) > 1:
         PORT = int(sys.argv[1])
 
     except:
-        sos_fail('Invalid port specified: ' + sys.argv[1])
+        sos.sos_fail('Invalid port specified: ' + sys.argv[1])
         sys.exit()
 
 # install SIGINT signal handler
@@ -360,7 +305,7 @@ signal.signal(signal.SIGINT, signal_handler)
 get_devices()
 
 # start listening...
-sos_info("Opening socket...")
+sos.sos_info("Opening socket...")
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 try:
@@ -368,22 +313,23 @@ try:
 
 except socket.error as msg:
     #print '  [Error] Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
-    sos_fail('Bind failed: you most likely already have something listening on port ' + str(PORT))
+    sos.sos_fail('Bind failed: you most likely already have something listening on port ' + str(PORT))
     sys.exit()
      
 s.listen(10)
 
 print ""
-sos_info('RedSquare ' + VERSION)
-sos_info('Now listening for incoming requests on port ' + str(PORT))
+sos.sos_note('RedSquare ' + VERSION)
+sos.sos_note('Now listening for incoming requests on port ' + str(PORT))
 print ""
  
 # loop until we get a SIGINT...
 
 while 1:
+    global sos
     # accept a connection
     conn, addr = s.accept()
-    sos_out('Connection made from ' + addr[0] + ':' + str(addr[1]))
+    sos.sos_info('Connection made from ' + addr[0] + ':' + str(addr[1]))
     thread = threading.Thread(target=client_thread, args=(conn,))
     thread.daemon = True
     thread.start()
