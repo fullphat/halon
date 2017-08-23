@@ -9,6 +9,9 @@ import threading
 import time
 import sos
 
+BOOT_ICON = "thing-color_wheel"
+BOOT_VER = "2.47"
+
 unicorn = None
 unicornLib = None
 
@@ -72,7 +75,7 @@ def init():
 	#time.sleep(0.5)
 	unicorn.off()
 
-	unicornlib.scroll_text(unicorn, 90, "RSOS 2.21", "ok")
+	unicornlib.scroll_text(unicorn, 90, "RSOS " + BOOT_VER, BOOT_ICON)
 
 	return True
 
