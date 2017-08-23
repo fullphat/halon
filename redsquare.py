@@ -87,7 +87,7 @@ def open_device(name):
 
     except:
         sos.ClrDevice()
-	sos.sos_fail(name + ".device not found" + bcolors.ENDC)
+	sos.sos_fail(name + ".device not found")
 
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
