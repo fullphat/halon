@@ -14,10 +14,15 @@ ImageDraw = None
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # scroll_text(): scroll some text
 #
+# icon can be a full path or stock icon (if preceded with '!')
+# Returns success(bool),hint(str)
+#
 def scroll_text(unicorn, rotationOffset, text, icon=""):
 
 	if text == "":
-		return
+		return False, "Nothing to display"
+
+	hint = ""
 
 	width, height = unicorn.get_shape()
 	text_x = width
@@ -54,11 +59,18 @@ def scroll_text(unicorn, rotationOffset, text, icon=""):
 	# if an icon name is provided, load it...
 	icn = None
 	if icon != "":
+		if icon[:1] == "!":
+			iconpath = "./icons/" + str(height) + "/" + icon.lstrip('!') + ".png"
+
+		else:
+			iconpath = icon
+
+		# try to load the icon...
 		try:
-			icn = Image.open('./icons/' + str(height) + '/' + icon + '.png', 'r')
+			icn = Image.open(iconpath, 'r')
 
 		except:
-			pass
+			hint = "Icon '" + iconpath + "' not found"
 
 	# if the icon loaded ok, widen required bitmap...
 	if icn != None:
@@ -100,6 +112,7 @@ def scroll_text(unicorn, rotationOffset, text, icon=""):
 			time.sleep(0.01)
 
 	unicorn.off()
+	return True, hint
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # show_image(): load and display the given image

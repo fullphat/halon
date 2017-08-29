@@ -1,5 +1,5 @@
 # Redsquare
-VERSION = "0.7"
+VERSION = "0.8"
 # Copyright (c) 2017 full phat products
 #
 # Usage: python reqsquare.py [port]
@@ -7,6 +7,8 @@ VERSION = "0.7"
 # [port] will default to 6789 if not supplied
 #
 # Credit to binary tides for python threaded socket code
+#
+# 0.8 - V2 API now returns JSON result
 #
 # 0.7 - bumped
 #
@@ -37,6 +39,10 @@ from urlparse import urlparse, parse_qs
 import os
 import importlib
 import sos
+
+import json
+
+
 _currentDevice = ""
 libs = { }
 HOST = ""
@@ -163,34 +169,42 @@ def handle_v2(device, unit, queryDict):
     result = False
     hint = "Unknown device '" + device + "'"
 
-    sos.SetDevice(device)
+    sos.sos_info("Using V2 API")
+    sos.sos_info("Looking for device '" + device + "'...")
 
-    sos.sos_info("(V2) Looking for device '" + device + "'...")
     try:
         dev = libs[device]
         if dev != None:
+            sos.SetDevice(device)
+
             # return the result of calling handler->handle()
             result,hint = getattr(dev, 'handle')(queryDict, 2, unit)
 
-            # talk to the device using a new thread...
-            #thread = threading.Thread(target=do_io_thread, args=(dev,queryDict,2,unit))
-            #thread.daemon = True
-            #thread.start()
-
         else:
-            sos.sos_fail("(V2) " + hint)
+            sos.sos_fail(hint)
 
     except TypeError:
         hint = "This device does not support the V2 API"
-        sos.sos_fail("(V2) " + hint)
+        sos.sos_fail(hint)
 
     except Exception, e:
         hint = "Error communicating with device: " + str(e)
-        sos.sos_fail("(V2) " + hint)
+        sos.sos_fail(hint)
 
     sos.ClrDevice()
-    return result,hint
 
+    # translate the result into JSON...
+
+    myResult = { 'Success': False, 'Hint': "" }
+
+    # on failure, hint can be used to explain what went wrong
+    # on success, hint can be used to include supplementary information
+
+    myResult['Success'] = result
+    myResult['Hint'] = hint
+
+    # still return true/false back up...
+    return result, json.dumps(myResult)
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # NOT USED

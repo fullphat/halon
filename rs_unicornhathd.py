@@ -75,7 +75,7 @@ def init():
 	#time.sleep(0.5)
 	unicorn.off()
 
-	unicornlib.scroll_text(unicorn, 90, "RSOS " + BOOT_VER, BOOT_ICON)
+	unicornlib.scroll_text(unicorn, 90, "RSOS " + BOOT_VER, "!" + BOOT_ICON)
 
 	return True
 
@@ -92,7 +92,7 @@ def handle(queryDict, apiVersion=0, unit=0):
 	global maxThread
 	if maxThread:
 		if maxThread.is_alive():
-			print '    [unicornhat] busy: added to queue...'
+			sos.sos_info('Device is busy, request added to queue')
 			return (True, "Request queued")
 
 	# start a thread to display the message
@@ -193,8 +193,9 @@ def process(queryDict):
 					icon = "system-info"
 
 			sos.sos_print("Displaying '" + text + "'")
-			unicornlib.scroll_text(unicorn, 90, text, icon)
-
+			result,hint = unicornlib.scroll_text(unicorn, 90, text, icon)
+			if hint != "":
+				sos.sos_warn("scroll_text(): " + hint)
 		else:
 			sos.sos_fail("No text to display")
 			return (False, "Nothing to do")
