@@ -1,5 +1,5 @@
 # Redsquare
-VERSION = "0.8"
+VERSION = "0.9"
 # Copyright (c) 2017 full phat products
 #
 # Usage: python reqsquare.py [port]
@@ -7,6 +7,8 @@ VERSION = "0.8"
 # [port] will default to 6789 if not supplied
 #
 # Credit to binary tides for python threaded socket code
+#
+# 0.9 - No longer returns response as HTML
 #
 # 0.8 - V2 API now returns JSON result
 #
@@ -195,13 +197,17 @@ def handle_v2(device, unit, queryDict):
 
     # translate the result into JSON...
 
-    myResult = { 'Success': False, 'Hint': "" }
+    myResult = { 'success': False, 'status': 200, 'hint': "" }
 
     # on failure, hint can be used to explain what went wrong
     # on success, hint can be used to include supplementary information
 
-    myResult['Success'] = result
-    myResult['Hint'] = hint
+    myResult['success'] = result
+    myResult['hint'] = hint
+
+    # status is either 200 (success) or 400 (failure) for now...
+    if not result:
+        myResult['status'] = 400
 
     # still return true/false back up...
     return result, json.dumps(myResult)
@@ -279,7 +285,9 @@ def client_thread(conn):
             sos.sos_fail("Invalid api version specified")
 
     # build the http reply...
-    body = "<html><body>" + response + "</body></html>"
+    #body = "<html><body>" + response + "</body></html>"
+
+    body = response
     reply = 'HTTP/1.1 200 OK\r\nContent-Length: ' + str(len(body)) + '\r\n\r\n' + body + '\r\n\r\n'
 
     # send it and close the socket...

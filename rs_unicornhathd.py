@@ -182,15 +182,15 @@ def process(queryDict):
 
 				if p == 1:
 					# high
-					icon = "system-warning"
+					icon = "!system-warning"
 
 				elif p > 1:
 					# urgent
-					icon = "system-urgent"
+					icon = "!system-urgent"
 
 				else:
 					# info
-					icon = "system-info"
+					icon = "!system-info"
 
 			sos.sos_print("Displaying '" + text + "'")
 			result,hint = unicornlib.scroll_text(unicorn, 90, text, icon)
