@@ -1,8 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 # Generic unicorn library
 # this one uses the Pimoroni standard library and Pillow
 # Copyright (c) 2017 full phat products
 #
 
+from __future__ import unicode_literals
 import time
 import sos
 
@@ -23,6 +27,8 @@ def scroll_text(unicorn, rotationOffset, text, icon=""):
 		return False, "Nothing to display"
 
 	hint = ""
+
+	text = text.decode('utf-8')
 
 	width, height = unicorn.get_shape()
 	text_x = width

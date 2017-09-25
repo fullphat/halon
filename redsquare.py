@@ -1,5 +1,5 @@
 # Redsquare
-VERSION = "0.9"
+VERSION = "0.10"
 # Copyright (c) 2017 full phat products
 #
 # Usage: python reqsquare.py [port]
@@ -7,6 +7,8 @@ VERSION = "0.9"
 # [port] will default to 6789 if not supplied
 #
 # Credit to binary tides for python threaded socket code
+#
+# 0.10 - Fixed unicode character printing issues
 #
 # 0.9 - No longer returns response as HTML
 #
@@ -37,6 +39,7 @@ import sys
 import socket
 import signal
 import threading
+import urllib
 from urlparse import urlparse, parse_qs
 import os
 import importlib
@@ -129,6 +132,7 @@ def get_url(request):
         if len(chunks) == 3:
             uri = chunks[1]
 
+    #return urllib.unquote(uri.lstrip('/'))
     return uri.lstrip('/')
 
 
@@ -210,7 +214,7 @@ def handle_v2(device, unit, queryDict):
         myResult['status'] = 400
 
     # still return true/false back up...
-    return result, json.dumps(myResult)
+    return result, json.dumps(myResult, indent=2)
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # NOT USED
@@ -348,7 +352,6 @@ print ""
 # loop until we get a SIGINT...
 
 while 1:
-    global sos
     # accept a connection
     conn, addr = s.accept()
     sos.sos_info('Connection made from ' + addr[0] + ':' + str(addr[1]))
