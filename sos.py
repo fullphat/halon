@@ -35,6 +35,7 @@ def ConfigTryGetFloat(config, section, name):
 class bcolors:
     WHITE = '\033[97m'
     MAGENTA = '\033[95m'
+    CYAN = '\033[94m'
     OKBLUE = '\033[94m'
     OKGREEN = '\033[92m'
     WARNING = '\033[93m'
@@ -57,7 +58,7 @@ def privLog(col, level, text, bold=False):
 
     # current device...
     if _curDev != "":
-        s = s + "{" + _curDev + "} "
+        s = s + "[" + bcolors.CYAN + _curDev + bcolors.ENDC + "] "
 
     if bold:
         s = s + bcolors.WHITE
