@@ -41,29 +41,31 @@ Glimmer the second Blink(1) device connected to your system a nice shade of mage
 
 `sudo python halon.py`
 
-Note that Halon runs under Python 2.7 at the moment.
+Note that Halon runs under Python 2.7 at the moment.  You may be able to run Halon without `sudo`, it depends on which devices you're intending to use.  Blink(1) devices require `sudo` as Halon needs access to the USB ports.
 
 ## Troubleshooting
 
 If you find your devices aren't detected, or you see errors when launching Halon, check the following:
 
 
-## UnicornHAT HD
+### UnicornHAT HD
 
 You should see a message scroll across the HAT during Halon startup.  If not, check you've installed the helper libraries already:
 
 (link here)
 
-## Blink(1)
+### Blink(1)
 
 Any connected Blink(1) devices should cycle through a rainbow scheme during startup.  If not:
 
-- Check you've installed pyUSB:
+- Check the Blink(1) devices flash briefly when your computer powers on
 
-...
+- Check you've installed PyUSB:
 
-- Check you've installed pyColour
+`sudo pip install pyusb`
 
-...
+- Check you've installed colour 0.1.5 (or later):
+
+`sudo pip install colour`
 
 
