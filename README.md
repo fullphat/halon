@@ -1,16 +1,18 @@
-# RedSquare
+# Halon
 
-A Python-based micro web server that controls various LED matricies, LCD displays, LEDs and other nifty widgets.
+## Synopsis
+
+Python-based micro webserver that controls various LED matricies, LCD displays, LEDs and other nifty widgets in a structured, easily-accessible, and extensible way.
 
 ## Concept
 
-RedSquare provides a simple web server that abstracts the different libraries required to talk to the various different widgets.  Support is designed to be seamless, so if you don't have a particular widget, RedSquare will fail gracefully.
+Halon supports a modular platform based on a single central webserver, a standard helper library and any number of third-party created device modules that interface with varying physical devices.
 
 ## Supported Devices
 
 - Max7219 8x8 LED Matrix
 - Thingm Blink(1) USB LED
-- Pimoroni HAT
+- Pimoroni UnicornHAT and UnicornHAT HD
 
 ## Support Planned
 
