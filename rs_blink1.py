@@ -6,6 +6,7 @@
 #
 
 import threading
+import random
 import struct
 import time
 import sos
@@ -208,7 +209,7 @@ def handleNew(unit, command, queryDict, apiVersion):
 	if command == "off":
 		if (setColourSync(Color("black"), unit)):
 			DeviceList[unit].SetIsOn(False)
-			return (200, "OK")
+			return (200, "")
 
 		else:
 			return (400, "No device found on unit " + unit)
@@ -216,10 +217,27 @@ def handleNew(unit, command, queryDict, apiVersion):
 	elif command == "on":
 		if (setColourSync(DeviceList[unit].Colour(), unit)):
 			DeviceList[unit].SetIsOn(True)
-			return (200, "OK")
+			return (200, "")
 
 		else:
 			return (400, "No device found on unit " + unit)
+
+	elif command == "random":
+		# just set to a random hue...
+		c = DeviceList[unit].Colour()
+		c.saturation = 1.0
+		c.luminance = 0.5
+		c.hue = random.random()
+
+		txt = str(c.hue * 360.0)
+		sos.sos_info("Chosen random hue: " + txt)
+
+		if updateUnitSync(unit):
+			return (200, txt)
+
+		else:
+			return (400, "No device found on unit " + unit)
+
 
 	elif command == "set":
 		# need two mandatory args: 'type' and 'value'
@@ -264,12 +282,12 @@ def handleNew(unit, command, queryDict, apiVersion):
 		# only update if the Blink(1) is on...
 		if DeviceList[unit].IsOn():
 			if (setColourSync(c, unit)):
-				return (200, "OK")
+				return (200, "")
 
 			else:
 				return (400, "No device found on unit " + unit)
 		else:
-			return (200, "OK")
+			return (200, "")
 
 	else:
 		col1 = ""
@@ -302,7 +320,7 @@ def handleNew(unit, command, queryDict, apiVersion):
 	DeviceList[unit].Thread = threading.Thread(target=device_thread, args=(unit, command, r, g, b, r2, g2, b2))
 	DeviceList[unit].Thread.daemon = True
 	DeviceList[unit].Thread.start()
-	return (200, "OK")
+	return (200, "")
 
 
 def setColourSync(c, unit):
@@ -320,6 +338,36 @@ def setColourSync(c, unit):
 	# set both LEDs immediately, and block until done...
 	device.fade_to_rgbn(0, r, g, b, 1)
 	device.fade_to_rgbn(0, r, g, b, 2)
+	return True
+
+
+#
+# set the colour of the specific unit immediately and block until it's done
+# this also marks the unit as on or off depending on the luminance value passed
+# expects the unit's Colour object to be pre-populated
+#
+def updateUnitSync(unit):
+
+	global DeviceList
+	c = DeviceList[unit].Colour()
+
+	# get the r,g,b values...
+	r = int(c.red * 255)
+	g = int(c.green * 255)
+	b = int(c.blue * 255)
+
+	global Blink1
+	device = Blink1(unit)
+	if (device.dev == None):
+		return False
+
+	# set both LEDs immediately, and block until done...
+	device.fade_to_rgbn(0, r, g, b, 1)
+	device.fade_to_rgbn(0, r, g, b, 2)
+
+	# mark as on if luminance > 0
+	DeviceList[unit].SetIsOn(True if c.luminance > 0 else False)
+
 	return True
 
 

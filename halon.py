@@ -1,5 +1,5 @@
-# Redsquare
-VERSION = "2.50"
+# Halon
+#VERSION = "2.51"
 # Copyright (c) 2018-2020 full phat products
 #
 # Usage: (sudo) python halon.py [port]
@@ -45,9 +45,13 @@ import urllib
 from urlparse import urlparse, parse_qs
 import os
 import importlib
-import sos
-
 import json
+import httplib
+
+# our stuff
+
+import halonsupport
+import sos
 
 global _listener
 #_listener = None
@@ -232,18 +236,23 @@ def handle_v3(device, unit, command, queryDict):
 
     success = (status >= 200 and status <= 299)
 
-    sos.sos_info("reply format to use is " + str(replyformat))
+    #sos.sos_info("reply format to use is " + str(replyformat))
 
     if (replyformat == 1):
 	# return the hint only
         payload = hint
 
     else:
-        # translate the result into JSON
-        payload = { 'success': success, 'status': status, 'hint': hint }
+        # translate the result into JSON...
+        value = ''
+        if success:
+            value = hint
+            hint = ''
+
+        payload = { 'success': success, 'payload': { 'hint': hint, 'value': value } }
         payload = json.dumps(payload, indent=2)
 
-    return success, payload
+    return status, success, payload
 
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -319,7 +328,7 @@ def client_thread(conn):
     sos.sos_note("Request is '" + uri + "'")
 
     success = False
-    httpstatus = 200
+    status = 200
     response = 'BadRequest'
 
     try:
@@ -335,10 +344,11 @@ def client_thread(conn):
     if o.path == "":
         sos.sos_warn("Empty path: returning our version info")
 	success = True
-        response = 'Welcome to Halon ' + VERSION + '!<br>Copyright (c) 2020 full phat products<br>See http://fullphat.net/redsquare/ for more details<br>'
+        response = 'Welcome to Halon ' + halonsupport.Version() + '!<br>Copyright (c) 2020 full phat products<br>See http://fullphat.net/redsquare/ for more details<br>'
 
     elif o.path == "favicon.ico":
         sos.sos_info("Ignoring favicon request...")
+	success = True
 
     else:
         # split the path up...
@@ -382,7 +392,7 @@ def client_thread(conn):
 
                 # return result of v3 handler...
                 d = parse_qs(o.query)
-                success,response = handle_v3(path[1], unit, path[3], d)
+                status,success,response = handle_v3(path[1], unit, path[3], d)
 
             else:
                 sos.sos_fail("(V3) URI path must be '/v3/{device}/{unit}/{command}[?{args}]")
@@ -395,7 +405,8 @@ def client_thread(conn):
     #body = "<html><body>" + response + "</body></html>"
 
     body = response
-    reply = 'HTTP/1.1 200 OK\r\nContent-Length: ' + str(len(body)) + '\r\n\r\n' + body + '\r\n\r\n'
+    reply = 'HTTP/1.1 ' + str(status) + ' ' + httplib.responses[status] + '\r\nContent-Length: ' + str(len(body)) + '\r\n\r\n' + body 
+    #+ '\r\n\r\n'
 
     # send it and close the socket...
     if success:
@@ -414,7 +425,7 @@ def client_thread(conn):
 global _listener
 
 print ''
-sos.sos_note('Halon ' + VERSION)
+sos.sos_note('Halon ' + halonsupport.Version())
 print 'Copyright (c) 2016-2018 full phat products'
 
 if len(sys.argv) > 1:
@@ -455,7 +466,7 @@ get_devices()
 _listener.listen(10)
 
 print ""
-sos.sos_note('Halon ' + VERSION)
+sos.sos_note('Halon ' + halonsupport.Version())
 sos.sos_note('Listening on port ' + str(PORT))
 print ""
  
