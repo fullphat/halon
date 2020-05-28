@@ -31,7 +31,39 @@ Glimmer the second Blink(1) device connected to your system a nice shade of mage
 
 ```curl 127.0.0.1:6789/v1?device=blink1&unit=1&mode=glimmer&rgb=ff00ff```
 
+## Getting Started
+
+(This is just some quick notes; a better guide will follow)
+
+* Clone this repository
+
+* Launch Halon:
+
+`sudo python halon.py`
+
+Note that Halon runs under Python 2.7 at the moment.
+
+## Troubleshooting
+
+If you find your devices aren't detected, or you see errors when launching Halon, check the following:
 
 
+## UnicornHAT HD
+
+You should see a message scroll across the HAT during Halon startup.  If not, check you've installed the helper libraries already:
+
+(link here)
+
+## Blink(1)
+
+Any connected Blink(1) devices should cycle through a rainbow scheme during startup.  If not:
+
+- Check you've installed pyUSB:
+
+...
+
+- Check you've installed pyColour
+
+...
 
 
