@@ -49,11 +49,11 @@ def scroll_text(unicorn, rotationOffset, text, icon=""):
 	# get the font...
 
 	if height == 8:
-		FONT = ("/usr/share/fonts/truetype/droid/DroidSansMono.ttf", 7)
+		FONT = ("NotoSans-Regular.ttf", 7)
 		#FONT = ("/usr/share/fonts/truetype/droid/DroidSans.ttf", 7)
 
 	else:
-		FONT = ("/usr/share/fonts/truetype/droid/DroidSans.ttf", 11)
+		FONT = ("NotoSans-Regular.ttf", 11)
 
 	font_file, font_size = FONT
 	font = ImageFont.truetype(font_file, font_size)

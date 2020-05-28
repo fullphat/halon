@@ -10,75 +10,17 @@ import struct
 import time
 import sos
 
+import blink1lowlevel
+from blink1support import DeviceInfo
+
 Blink1 = None
-threadPool = []
+Color = None
 
-def strobe(blink1, r, g, b, r2, g2, b2, repeat):
-	for i in range(repeat):
-		blink1.fade_to_rgbn(0, r, g, b, 1)
-		blink1.fade_to_rgbn(0, r2, g2, b2, 2)
-		time.sleep(0.1)
-		blink1.fade_to_rgbn(0, 0, 0, 0, 0)
-		time.sleep(0.2)
-
-def off(blink1):
-	blink1.fade_to_rgbn(0, 0, 0, 0, 0)
-
-def on(blink1, r, g, b, r2=-1, g2=-1, b2=-1):
-
-	if r2 == -1:
-		r2 = r
-
-	if g2 == -1:
-		g2 = g
-
-	if b2 == -1:
-		b2 = b
-
-	blink1.fade_to_rgbn(0, r, g, b, 1)
-	blink1.fade_to_rgbn(0, r2, g2, b2, 2)
-
-def fade(blink1, r, g, b, delay, r2=-1, g2=-1, b2=-1, wait=0):
-
-	if r2 == -1:
-		r2 = r
-
-	if g2 == -1:
-		g2 = g
-
-	if b2 == -1:
-		b2 = b
-
-	blink1.fade_to_rgbn(delay, r, g, b, 1)
-	blink1.fade_to_rgbn(delay, r2, g2, b2, 2)
-
-	if wait > 0:
-		time.sleep(wait * 1000)
-		off(blink1)
+# list of blink1support->DeviceInfo objects
+# initialised during init()
+DeviceList = []
 
 
-def glimmer(blink1, r, g, b, repeat, r2=-1, g2=-1, b2=-1):
-	fadems = 300
-	waitms = (fadems + 50) / 1000.0
-
-	if r2 == -1:
-		r2 = r
-
-	if g2 == -1:
-		g2 = g
-
-	if b2 == -1:
-		b2 = b
-
-	for i in range(repeat):
-		blink1.fade_to_rgbn(fadems, r, g, b, 1)
-		blink1.fade_to_rgbn(fadems, int(r2/2), int(g2/2), int(b2/2), 2)
-		time.sleep(waitms)
-		blink1.fade_to_rgbn(fadems, int(r/2), int(g/2), int(b/2), 1)
-		blink1.fade_to_rgbn(fadems, r2, g2, b2, 2)
-		time.sleep(waitms)
-
-	fade(blink1, 0, 0, 0, fadems)
 
 
 def rgb_from_string(rgb):
@@ -110,6 +52,16 @@ def rgb_from_string(rgb):
 def init():
 
 	global Blink1
+	global Color
+
+	try:
+		from colour import Color
+
+	except Exception, e:
+		sos.sos_fail("Missing Colour library")
+		sos.sos_info("Use '(sudo) pip install colour' to fix this")
+		return False
+
 	try:
 		from support.blink1 import Blink1
 		sos.sos_info("Got support library")
@@ -138,12 +90,11 @@ def init():
 		sos.sos_fail("No devices found!")
 		return False
 
-	# if we did, initialise a pool of threads, one for each device (unit)
-
-	#global Blink1
+	# run the initialisation routine
+	# for now, just cycle through the rainbow...
 
 	for j in range(i):
-		Blink1(j).fade_to_rgbn(800, 255, 0, 0, 0)
+		Blink1(j).fade_to_rgbn(100, 255, 0, 0, 0)
 	time.sleep(0.1)
 
 	for j in range(i):
@@ -167,35 +118,83 @@ def init():
 	time.sleep(0.1)
 
 	for j in range(i):
-		Blink1(j).fade_to_rgbn(600, 0, 0, 0, 0)
+		Blink1(j).fade_to_rgbn(100, 0, 0, 0, 0)
 
 	sos.sos_print(str(i) + " device(s) found")
 	sos.sos_print("Note that if you're using the V2 API, unit numbers must be doubled")
-	global threadPool
-	threadPool = [None] * i
+
+	# create a DeviceInfo object for each one found...
+
+	global DeviceList
+	for j in range(i):
+		DeviceList.append(DeviceInfo())
+
 	return True
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # v3 device handler
-# return int,string (200,"OK") if query was handled, or false otherwise
+# return int,string,int (200,"OK",format) if query was handled
+#   or false otherwise
+#
+# format is 0 (default) for JSON or 1 for raw
 #
 def handleNew(unit, command, queryDict, apiVersion):
 
 #	print "[blink1] V3 API"
 #	print command
 
-	global threadPool
+	global DeviceList
 
-	if (unit < -1 or unit > len(threadPool)-1):
+	# validate unit number
+
+	if (unit < -1 or unit > len(DeviceList)-1):
 		sos.sos_fail("Invalid unit number #" + str(unit))
 		return (400, "Invalid unit number specified")
+
+	# broadcasting not done yet...
 
 	if unit == -1:
 		sos.sos_fail("Unit broadcast not yet implemented")
 		return (501, "Unit broadcast not yet implemented")
 
-	if threadPool[unit]:
-		if threadPool[unit].is_alive():
+	# request for info?
+
+	sos.sos_info("Command=" + command)
+
+	if command == "status":
+		# return "ok", "0" or "1" and use raw format for now
+		# formats: 0=json (default), 1=raw
+		status = "1" if DeviceList[unit].IsOn() else "0"
+		sos.sos_info("Status=" + status)
+		return (200, status)
+
+	elif command == "get":
+		value = ""
+		success = True
+
+		# get current colour settings
+		c = DeviceList[unit].Colour()
+
+		typelist = queryDict.get("type", [])
+		if "hue" in typelist:
+			value = str(int(c.hue * 360))
+
+		elif "saturation" in typelist:
+			value = str(int(c.saturation * 100))
+
+		elif "brightness" in typelist:
+			value = str(int(c.luminance * 200))
+
+		else:
+			# return rgb value for now
+			value = str(c.rgb)
+
+		sos.sos_info("Value=" + value)
+		return (200 if success else 404, value)
+
+	# check to make sure we're not doing some asynchronous pattern...
+	if DeviceList[unit].Thread():
+		if DeviceList[unit].Thread().is_alive():
 			sos.sos_fail("Unit #" + str(unit) + " is busy")
 			return (409, "Requested unit is busy")
 
@@ -207,7 +206,70 @@ def handleNew(unit, command, queryDict, apiVersion):
 	b2 = 0
 
 	if command == "off":
-		pass
+		if (setColourSync(Color("black"), unit)):
+			DeviceList[unit].SetIsOn(False)
+			return (200, "OK")
+
+		else:
+			return (400, "No device found on unit " + unit)
+
+	elif command == "on":
+		if (setColourSync(DeviceList[unit].Colour(), unit)):
+			DeviceList[unit].SetIsOn(True)
+			return (200, "OK")
+
+		else:
+			return (400, "No device found on unit " + unit)
+
+	elif command == "set":
+		# need two mandatory args: 'type' and 'value'
+		typelist = queryDict.get("type", [])
+		valuelist = queryDict.get("value", [])
+
+		if len(typelist) == 0 or len(valuelist) == 0:
+			return (400, "Missing required 'type' or 'value' parameter")
+
+		if len(typelist) > 1 or len(valuelist) > 1:
+			return (400, "Must specify only one 'type' and 'value' parameter")
+
+		type = typelist[0]
+		value = valuelist[0].replace("$", "#")
+
+		sos.sos_info("Set " + type + " to " + value)
+
+		# get the colour
+		c = DeviceList[unit].Colour()
+
+		if type == "hue":
+			h = int(value) / 360.0
+			c.hue = h
+
+		elif type == "saturation":
+			s = int(value) / 100.0
+			c.saturation = s
+
+		elif type == "brightness":
+			b = int(value) / 200.0
+			c.luminance = b
+
+		elif type == "rgb":
+			xc = Color(value)
+			c.red = xc.red
+			c.green = xc.green
+			c.blue = xc.blue
+
+		else:
+			return (400, "Missing required parameter")
+
+		# only update if the Blink(1) is on...
+		if DeviceList[unit].IsOn():
+			if (setColourSync(c, unit)):
+				return (200, "OK")
+
+			else:
+				return (400, "No device found on unit " + unit)
+		else:
+			return (200, "OK")
 
 	else:
 		col1 = ""
@@ -237,10 +299,29 @@ def handleNew(unit, command, queryDict, apiVersion):
 
 	# start a thread to talk to the blink1
 
-	threadPool[unit] = threading.Thread(target=device_thread, args=(unit, command, r, g, b, r2, g2, b2))
-	threadPool[unit].daemon = True
-	threadPool[unit].start()
+	DeviceList[unit].Thread = threading.Thread(target=device_thread, args=(unit, command, r, g, b, r2, g2, b2))
+	DeviceList[unit].Thread.daemon = True
+	DeviceList[unit].Thread.start()
 	return (200, "OK")
+
+
+def setColourSync(c, unit):
+
+	# get the r,g,b values...
+	r = int(c.red * 255)
+	g = int(c.green * 255)
+	b = int(c.blue * 255)
+
+	global Blink1
+	device = Blink1(unit)
+	if (device.dev == None):
+		return False
+
+	# set both LEDs immediately, and block until done...
+	device.fade_to_rgbn(0, r, g, b, 1)
+	device.fade_to_rgbn(0, r, g, b, 2)
+	return True
+
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # device handler
@@ -350,3 +431,72 @@ def device_thread(unitNum, command, red, green, blue, red2, green2, blue2):
 #	time.sleep(0.5)
 #	blink1.fade_to_rgb(1000, 0, 0, 0)
 
+
+
+
+#def strobe(blink1, r, g, b, r2, g2, b2, repeat):
+#	for i in range(repeat):
+#		blink1.fade_to_rgbn(0, r, g, b, 1)
+#		blink1.fade_to_rgbn(0, r2, g2, b2, 2)
+#		time.sleep(0.1)
+#		blink1.fade_to_rgbn(0, 0, 0, 0, 0)
+#		time.sleep(0.2)
+
+#def off(blink1):
+#	blink1.fade_to_rgbn(0, 0, 0, 0, 0)
+
+#def on(blink1, r, g, b, r2=-1, g2=-1, b2=-1):
+
+#	if r2 == -1:
+#		r2 = r
+
+#	if g2 == -1:
+#		g2 = g
+
+#	if b2 == -1:
+#		b2 = b
+
+#	blink1.fade_to_rgbn(0, r, g, b, 1)
+#	blink1.fade_to_rgbn(0, r2, g2, b2, 2)
+
+#def fade(blink1, r, g, b, delay, r2=-1, g2=-1, b2=-1, wait=0):
+
+#	if r2 == -1:
+#		r2 = r
+
+#	if g2 == -1:
+#		g2 = g
+
+#	if b2 == -1:
+#		b2 = b
+
+#	blink1.fade_to_rgbn(delay, r, g, b, 1)
+#	blink1.fade_to_rgbn(delay, r2, g2, b2, 2)
+
+#	if wait > 0:
+#		time.sleep(wait * 1000)
+#		off(blink1)
+
+
+#def glimmer(blink1, r, g, b, repeat, r2=-1, g2=-1, b2=-1):
+#	fadems = 300
+#	waitms = (fadems + 50) / 1000.0
+
+#	if r2 == -1:
+#		r2 = r
+
+#	if g2 == -1:
+#		g2 = g
+
+#	if b2 == -1:
+#		b2 = b
+
+#	for i in range(repeat):
+#		blink1.fade_to_rgbn(fadems, r, g, b, 1)
+#		blink1.fade_to_rgbn(fadems, int(r2/2), int(g2/2), int(b2/2), 2)
+#		time.sleep(waitms)
+#		blink1.fade_to_rgbn(fadems, int(r/2), int(g/2), int(b/2), 1)
+#		blink1.fade_to_rgbn(fadems, r2, g2, b2, 2)
+#		time.sleep(waitms)
+
+#	fade(blink1, 0, 0, 0, fadems)

@@ -1,8 +1,8 @@
 # Redsquare
-VERSION = "0.11"
-# Copyright (c) 2018 full phat products
+VERSION = "2.50"
+# Copyright (c) 2018-2020 full phat products
 #
-# Usage: python reqsquare.py [port]
+# Usage: (sudo) python halon.py [port]
 #
 # [port] will default to 6789 if not supplied
 #
@@ -49,8 +49,12 @@ import sos
 
 import json
 
-_listener = None
+global _listener
+#_listener = None
+
+global _currentDevice
 _currentDevice = ""
+
 libs = { }
 HOST = ""
 PORT = 6789
@@ -171,7 +175,7 @@ def handle(queryDict):
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # v3 query handler
-# return bool,string Tuple (e.g True,"OK") if query was
+# return int,string,int Tuple (e.g True,"OK",format) if query was
 # handled, or false otherwise
 #
 def handle_v3(device, unit, command, queryDict):
@@ -179,9 +183,17 @@ def handle_v3(device, unit, command, queryDict):
 
     status = 418
     hint = "Beverage containment error - refer to handbook"
+    replyformat = 0 # json
 
     #sos.sos_info("Using V3 API")
     sos.sos_info("(v3) looking for device '" + device + "'...")
+
+    # remember that queryDict is a dictionary of keys and [values]
+
+    formatlist = queryDict.get("replyformat", [])
+    if "raw" in formatlist:
+        replyformat = 1 # raw format
+
 
     try:
         # this raises KeyError if the device isn't found...
@@ -192,6 +204,7 @@ def handle_v3(device, unit, command, queryDict):
         # "status" must be a standard HTTP status and should be a RESTful one
         # on failure, "hint" can be used to explain what went wrong
         # on success, "hint" can be used to include supplementary information
+	# format is 0 for json wrapper; 1 for raw
 
         status,hint = getattr(dev, 'handleNew')(unit, command, queryDict, 3)
 
@@ -217,11 +230,20 @@ def handle_v3(device, unit, command, queryDict):
 
     sos.ClrDevice()
 
-    # translate the result into JSON
-
     success = (status >= 200 and status <= 299)
-    myResult = { 'success': success, 'status': status, 'hint': hint }
-    return success, json.dumps(myResult, indent=2)
+
+    sos.sos_info("reply format to use is " + str(replyformat))
+
+    if (replyformat == 1):
+	# return the hint only
+        payload = hint
+
+    else:
+        # translate the result into JSON
+        payload = { 'success': success, 'status': status, 'hint': hint }
+        payload = json.dumps(payload, indent=2)
+
+    return success, payload
 
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -297,6 +319,7 @@ def client_thread(conn):
     sos.sos_note("Request is '" + uri + "'")
 
     success = False
+    httpstatus = 200
     response = 'BadRequest'
 
     try:
@@ -311,7 +334,8 @@ def client_thread(conn):
 
     if o.path == "":
         sos.sos_warn("Empty path: returning our version info")
-        response = 'Welcome to Halon ' + VERSION + '!<br>Copyright (c) 2018 full phat products<br>See http://fullphat.net/redsquare/ for more details<br>'
+	success = True
+        response = 'Welcome to Halon ' + VERSION + '!<br>Copyright (c) 2020 full phat products<br>See http://fullphat.net/redsquare/ for more details<br>'
 
     elif o.path == "favicon.ico":
         sos.sos_info("Ignoring favicon request...")
@@ -405,13 +429,10 @@ if len(sys.argv) > 1:
         sos.sos_fail('Invalid port specified: ' + sys.argv[1])
         sys.exit()
 
-# install SIGINT signal handler
-signal.signal(signal.SIGINT, signal_handler)
 
-# load up our device handlers...
-get_devices()
+# main start...
 
-# start listening...
+# set up the socket...
 sos.sos_info("Opening socket...")
 _listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -422,7 +443,15 @@ except socket.error as msg:
     #print '  [Error] Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
     sos.sos_fail('Bind failed: you most likely already have something listening on port ' + str(PORT))
     sys.exit()
-     
+
+
+# install SIGINT signal handler...
+signal.signal(signal.SIGINT, signal_handler)
+
+# load up our device handlers...
+get_devices()
+
+# start listening...
 _listener.listen(10)
 
 print ""
@@ -436,6 +465,8 @@ while 1:
     # accept a connection
     conn, addr = _listener.accept()
     sos.sos_info('Connection made from ' + addr[0] + ':' + str(addr[1]))
-    thread = threading.Thread(target=client_thread, args=(conn,))
-    thread.daemon = True
-    thread.start()
+    client_thread(conn)
+
+#    thread = threading.Thread(target=client_thread, args=(conn,))
+#    thread.daemon = True
+#    thread.start()

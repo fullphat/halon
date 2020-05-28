@@ -2,7 +2,7 @@
 # unicornhathd.device handler
 # this one uses the Pimoroni standard library and Pillow
 # 16x16 16K RGB LED Matrix
-# Copyright (c) 2017 full phat products
+# Copyright (c) 2017-2020 full phat products
 #
 
 import threading
@@ -10,7 +10,9 @@ import time
 import sos
 
 BOOT_ICON = "thing-color_wheel"
-BOOT_VER = "2.47"
+BOOT_VER = "2.50"
+
+# 2.50: moved font into same folder to prevent crash if requested font missing
 
 unicorn = None
 unicornLib = None
@@ -75,7 +77,7 @@ def init():
 	#time.sleep(0.5)
 	unicorn.off()
 
-	unicornlib.scroll_text(unicorn, 90, "RSOS " + BOOT_VER, "!" + BOOT_ICON)
+	unicornlib.scroll_text(unicorn, 90, "Halon " + BOOT_VER, "!" + BOOT_ICON)
 
 	return True
 
