@@ -10,28 +10,30 @@ Halon provides a modular platform based on a single central webserver, a standar
 
 Typically this will be a Raspberry Pi or similar system although, so long as the system supports Python 2.7, TCP sockets, and has the appropriate support libraries installed, it should work anywhere.
 
-## Supported Devices
+## Devices
+
+### Supported
 
 - Max7219 8x8 LED Matrix
 - Thingm Blink(1) USB LED
 - Pimoroni UnicornHAT and UnicornHAT HD
 
-## Support Planned
+### Support Planned
 
 - Nokia 3310/5110 LCD Display
 - Pimoroni pHAT
 
 ## Examples
 
-The following examples use **curl**, however you could just paste everything but "curl" into the address bar of your favourite browser.  Don't forget to prefix with "http://" of course.
+The following examples use **curl**, however you could just paste the URL into the address bar of your favourite browser.  Don't forget to prefix with "http://" of course.
 
 Display "Hello world!" as a scrolling message on a MAX7219 8x8 Matrix:
 
-```curl 127.0.0.1:6789/v1?device=max7219&text=Hello%20world%21```
+`curl 127.0.0.1:6789/v1?device=max7219&text=Hello%20world%21`
 
 Glimmer the second Blink(1) device connected to your system a nice shade of magenta:
 
-```curl 127.0.0.1:6789/v1?device=blink1&unit=1&mode=glimmer&rgb=ff00ff```
+`curl 127.0.0.1:6789/v1?device=blink1&unit=1&mode=glimmer&rgb=ff00ff`
 
 ## Getting Started
 
