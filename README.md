@@ -59,7 +59,7 @@ If you find your devices aren't detected, or you see errors when launching Halon
 
 You should see a message scroll across the HAT during Halon startup.  If not, check you've installed the helper libraries already:
 
-'curl https://get.pimoroni.com/unicornhathd | bash'
+`curl https://get.pimoroni.com/unicornhathd | bash`
 
 More details here: https://github.com/pimoroni/unicorn-hat-hd
 
